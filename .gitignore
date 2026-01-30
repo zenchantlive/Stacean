@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.next/
+.next/static/
+.next/cache/
+
+# Build outputs
+out/
+dist/
+build/
+
+# Testing
+test-results/
+coverage/
+*.log
+
+# Environment (local only - use .env.production.local for prod secrets)
+.env.local
+.env
+
+# Vercel
+.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Debug files (local only)
+debug/*.png
+debug/*.jpg
+*.screenshot.png
+
+# Beads runtime (keep config, exclude DB)
+system/.beads/blocks.db
+system/.beads/blocks.db-shm
+system/.beads/blocks.db-wal
+system/.beads/beads.db
+system/.beads/beads.db-shm
+system/.beads/beads.db-wal
+system/.beads/daemon.log
+system/.beads/bd.sock
+system/.beads/daemon.lock
+system/.beads/daemon.pid
+system/.beads/.local_version
+system/.beads/interactions.jsonl
+system/.beads/last-touched
