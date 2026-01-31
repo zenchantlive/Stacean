@@ -106,7 +106,6 @@ export function TaskWidget() {
           activeTasks={activeTasks}
           selectedTaskId={selectedTaskId}
           onSelect={(taskId) => {
-            setSelectedTaskId(taskId);
             const task = tasks.find(t => t.id === taskId);
             if (task) handleTaskClick(task);
           }}
