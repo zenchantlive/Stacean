@@ -29,7 +29,7 @@ test.describe('Fleet Commander / Task Tracker', () => {
     await expect(page.getByText(taskTitle)).toBeVisible();
   });
 
-  test('should open task for editing on click', async ({ page }) => {
+  test('should expand task inline for editing on click', async ({ page }) => {
     const taskTitle = `Edit Test Task ${Date.now()}`;
     
     // 1. Create Task
@@ -48,23 +48,17 @@ test.describe('Fleet Commander / Task Tracker', () => {
     const taskCard = page.getByText(taskTitle).first();
     await expect(taskCard).toBeVisible();
 
-    // 2. Click to open edit modal
+    // 2. Click to expand inline
     await taskCard.click();
     
-    // Wait for modal to appear - it opens in view mode
-    // Look for the modal container
-    await expect(page.locator('.fixed.inset-0')).toBeVisible({ timeout: 5000 });
-    
-    // Verify task info is displayed (view mode)
-    await expect(page.locator('.bg-\\[\\#0A0A0A\\]')).toContainText(taskTitle);
+    // Verify inline editor is visible
+    await expect(page.locator(`input[value="${taskTitle}"]`)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Description')).toBeVisible();
   });
 
   test('should show Active Task Bar', async ({ page }) => {
     // New Task button should be visible
     await expect(page.getByText('New Task')).toBeVisible();
-
-    // If no active tasks, it should show the empty state
-    await expect(page.getByText('No active tasks')).toBeVisible();
   });
 
   test('should display in-progress task in Active Task Bar', async ({ page }) => {

@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActiveTaskBar } from "./ActiveTaskBar";
 import { TaskGrid } from "./TaskGrid";
-import { TaskEditModal } from "./TaskEditModal";
 import { Task, TaskPriority } from "@/lib/types/tracker";
 import { Plus, Terminal } from "lucide-react";
 
@@ -16,10 +15,6 @@ export function TaskWidget() {
   // Quick Add State
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>("medium");
-  
-  // Edit Modal State
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editMode, setEditMode] = useState<'view' | 'edit'>('view');
 
   // Fetch data
   const fetchData = async () => {
@@ -83,16 +78,8 @@ export function TaskWidget() {
     inputRef.current?.focus();
   };
 
-  // Handle task click - OPEN FOR EDIT (not toggle!)
-  const handleTaskClick = (task: Task) => {
-    setSelectedTaskId(task.id);
-    setEditingTask(task);
-    setEditMode('view');
-  };
-
-  // Close edit modal
-  const closeEditModal = () => {
-    setEditingTask(null);
+  const handleTaskSelect = (taskId: string | null) => {
+    setSelectedTaskId(taskId);
   };
 
   const activeTasks = tasks.filter(t => t.status === 'in-progress');
@@ -105,10 +92,7 @@ export function TaskWidget() {
         <ActiveTaskBar
           activeTasks={activeTasks}
           selectedTaskId={selectedTaskId}
-          onSelect={(taskId) => {
-            const task = tasks.find(t => t.id === taskId);
-            if (task) handleTaskClick(task);
-          }}
+          onSelect={(taskId) => handleTaskSelect(taskId)}
           onCreateTask={focusQuickAdd}
         />
       </div>
@@ -157,23 +141,16 @@ export function TaskWidget() {
               </button>
             </form>
 
-            <TaskGrid tasks={tasks} onTaskClick={handleTaskClick} />
+            <TaskGrid
+              tasks={tasks}
+              selectedTaskId={selectedTaskId}
+              onSelect={handleTaskSelect}
+              onUpdateTask={updateTask}
+            />
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Task Edit Modal */}
-      <AnimatePresence>
-        {editingTask && (
-          <TaskEditModal
-            task={editingTask}
-            mode={editMode}
-            onModeChange={setEditMode}
-            onClose={closeEditModal}
-            onUpdate={updateTask}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
