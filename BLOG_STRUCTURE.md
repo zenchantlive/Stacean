@@ -28,11 +28,28 @@ This folder now contains ALL files needed for the blog/dashboard app.
 ## Configuration Files
 
 - `.env.local` - Environment variables (BEADS_DIR, AGENTS_FILE)
-- `vercel.json` - Vercel deployment config
+- `vercel.json` - Vercel deployment config (rootDirectory removed - repo IS at root)
 - `package.json` - NPM dependencies
 - `next.config.js` - Next.js configuration
 - `tailwind.config.js` - Tailwind CSS configuration
 - `tsconfig.json` - TypeScript configuration
+
+## Deployment Notes (2026-01-31)
+
+### Vercel Deployment Fix
+**Issue:** `vercel.json` had `rootDirectory: "blog"` which told Vercel to look for the project in a subdirectory that doesn't exist.
+
+**Fix:** Removed `rootDirectory` from `vercel.json`. Vercel now auto-detects from `package.json` location.
+
+**Build Status:** ✅ Local build passes successfully with all pages detected:
+- `/` - Static home
+- `/blog/[slug]` - 6 blog posts pre-rendered
+- All API routes functional
+
+### Beads Integration
+- Beads database located at: `blog/.beads/beads.db`
+- Task tracking API: `/api/tracker/tasks` and `/api/tracker/agents`
+- Working correctly via CLI and API
 
 ## Key Integrations
 
