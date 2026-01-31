@@ -48,3 +48,6 @@ system/.beads/daemon.pid
 system/.beads/.local_version
 system/.beads/interactions.jsonl
 system/.beads/last-touched
+
+# bv (beads viewer) local config and caches
+.bv/
