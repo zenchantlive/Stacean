@@ -1,51 +1,132 @@
-import { NextResponse } from 'next/server';
-import { taskTracker, UpdateTaskInput } from '@/lib/integrations/kv/tracker';
+// Task Tracker API - Beads Integration (by ID)
+
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  getIssue,
+  updateIssue as updateIssueUncached,
+  deleteIssue,
+  BeadsError,
+} from '@/lib/integrations/beads/client-cached';
+import { beadToTask } from '@/lib/integrations/beads/mapper';
+import type { TaskPriority, TaskStatus } from '@/lib/types/tracker';
+
+// ============================================================================
+// GET /api/tracker/tasks/[id] - Fetch a task
+// ============================================================================
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const task = await taskTracker.getTask(params.id);
-    if (!task) {
+    const bead = await getIssue(params.id);
+    if (!bead) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
-    return NextResponse.json(task);
+    return NextResponse.json(beadToTask(bead));
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('API Error (GET /tasks/[id]):', error);
+
+    if (error instanceof BeadsError) {
+      return NextResponse.json(
+        { error: error.message, stderr: error.stderr },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ error: 'Failed to fetch task' }, { status: 500 });
   }
 }
 
+// ============================================================================
+// PATCH /api/tracker/tasks/[id] - Update a task
+// ============================================================================
+
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json();
-    const task = await taskTracker.updateTask(params.id, body as UpdateTaskInput);
-    if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    const updates = await request.json();
+
+    const beadUpdates: {
+      title?: string;
+      description?: string;
+      priority?: number;
+      status?: string;
+      assignee?: string;
+      labels?: string[];
+    } = {};
+
+    if (updates.title) beadUpdates.title = updates.title;
+    if (updates.description) beadUpdates.description = updates.description;
+    if (updates.priority !== undefined) beadUpdates.priority = mapPriorityToBead(updates.priority);
+    if (updates.status) beadUpdates.status = mapStatusToBead(updates.status);
+    if (updates.assignedTo) {
+      beadUpdates.assignee = updates.assignedTo === 'JORDAN' ? undefined : updates.assignedTo;
     }
-    return NextResponse.json(task);
+
+    const bead = await updateIssueUncached(params.id, beadUpdates);
+    return NextResponse.json(beadToTask(bead));
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('API Error (PATCH /tasks/[id]):', error);
+
+    if (error instanceof BeadsError) {
+      return NextResponse.json(
+        { error: error.message, stderr: error.stderr },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
   }
 }
 
+// ============================================================================
+// DELETE /api/tracker/tasks/[id] - Delete a task
+// ============================================================================
+
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const success = await taskTracker.deleteTask(params.id);
-    if (!success) {
-      return NextResponse.json({ error: 'Task not found or could not be deleted' }, { status: 404 });
-    }
-    return NextResponse.json({ success: true });
+    const result = await deleteIssue(params.id);
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 });
+    console.error('API Error (DELETE /tasks/[id]):', error);
+
+    if (error instanceof BeadsError) {
+      return NextResponse.json(
+        { error: error.message, stderr: error.stderr },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: false, error: 'Failed to delete task' }, { status: 500 });
   }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+function mapPriorityToBead(priority: TaskPriority): number {
+  const priorityMap: Record<TaskPriority, number> = {
+    'urgent': 0,
+    'high': 1,
+    'medium': 2,
+    'low': 3,
+  };
+  return priorityMap[priority] || 2;
+}
+
+function mapStatusToBead(status: TaskStatus): string {
+  const statusMap: Record<TaskStatus, string> = {
+    'todo': 'todo',
+    'in-progress': 'in-progress',
+    'review': 'review',
+    'done': 'done',
+  };
+  return statusMap[status] || 'open';
 }

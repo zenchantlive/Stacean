@@ -6,7 +6,7 @@ test.describe('Fleet Commander / Task Tracker', () => {
   
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
-    // Wait for the widget to load (TaskGrid or FleetBar)
+    // Wait for the widget to load (TaskGrid + ActiveTaskBar)
     await expect(page.getByText('To Do')).toBeVisible();
   });
 
@@ -59,13 +59,38 @@ test.describe('Fleet Commander / Task Tracker', () => {
     await expect(page.locator('.bg-\\[\\#0A0A0A\\]')).toContainText(taskTitle);
   });
 
-  test('should show Fleet Bar with YOU avatar', async ({ page }) => {
-    // Exact match to avoid matching "Medium" or other partials
-    const youAvatar = page.getByText('YOU', { exact: true });
-    await expect(youAvatar).toBeVisible();
-    
-    // Check for initials "ME" (Exact match)
-    await expect(page.getByText('ME', { exact: true })).toBeVisible();
+  test('should show Active Task Bar', async ({ page }) => {
+    // New Task button should be visible
+    await expect(page.getByText('New Task')).toBeVisible();
+
+    // If no active tasks, it should show the empty state
+    await expect(page.getByText('No active tasks')).toBeVisible();
+  });
+
+  test('should display in-progress task in Active Task Bar', async ({ page }) => {
+    const taskTitle = `Active Task ${Date.now()}`;
+
+    // Create task via API
+    const createResponse = await page.request.post(`${BASE_URL}/api/tracker/tasks`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({
+        title: taskTitle,
+        priority: 'high',
+      }),
+    });
+    expect(createResponse.status()).toBe(201);
+    const createdTask = await createResponse.json();
+
+    // Update to in-progress
+    const updateResponse = await page.request.patch(`${BASE_URL}/api/tracker/tasks/${createdTask.id}`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({ status: 'in-progress' }),
+    });
+    expect(updateResponse.status()).toBe(200);
+
+    // Refresh UI and verify task appears in Active Task Bar
+    await page.reload();
+    await expect(page.getByText(taskTitle)).toBeVisible();
   });
 
 });
