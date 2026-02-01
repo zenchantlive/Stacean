@@ -39,9 +39,7 @@ async function execBeads(args: string[]): Promise<any> {
       {
         timeout: TIMEOUT_MS,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-        // CRITICAL: Beads DB location. Must be workspace root.
-        // Use CLAWDBOT_WORKSPACE env var, fallback to current directory.
-        cwd: process.env.CLAWDBOT_WORKSPACE ?? process.cwd(),
+        cwd: '/home/clawdbot/clawd',
       }
     );
 

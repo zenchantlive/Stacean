@@ -1,17 +1,8 @@
-// Task Tracker API - Beads Integration (Production-Ready)
-// Uses cached Beads client + agent state exposure
+// Task Tracker API - KV with Beads Mirroring
+// Uses KV for production (real-time), mirrors to Beads for local tracking
 
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  listIssues,
-  getIssue as getIssueUncached,
-  createIssue,
-  updateIssue,
-  closeIssue as closeIssueUncached,
-  deleteIssue,
-  BeadsError,
-} from '@/lib/integrations/beads/client-cached';
-import { beadToTask, taskToBead } from '@/lib/integrations/beads/mapper';
+import { taskTracker, type CreateTaskInput, type UpdateTaskInput, type Task, type TaskPriority, type TaskStatus } from '@/lib/integrations/kv/tracker';
 
 // ============================================================================
 // GET /api/tracker/tasks - List all tasks
@@ -19,8 +10,7 @@ import { beadToTask, taskToBead } from '@/lib/integrations/beads/mapper';
 
 export async function GET(request: NextRequest) {
   try {
-    const beads = await listIssues();
-    const tasks = beads.map(beadToTask);
+    const tasks = await taskTracker.listTasks();
 
     // Filter by project if query param provided
     const { searchParams } = new URL(request.url);
@@ -33,14 +23,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(tasks);
   } catch (error) {
     console.error('API Error (GET /tasks):', error);
-
-    if (error instanceof BeadsError) {
-      return NextResponse.json(
-        { error: error.message, stderr: error.stderr },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
   }
 }
@@ -56,33 +38,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    // Map Fleet Commander Task to Beads Issue
-    const beadParams = taskToBead({
+    const taskInput: CreateTaskInput = {
       title: body.title,
       description: body.description,
-      priority: mapPriorityToBead(body.priority),
-      assignee: body.assignedTo,
+      priority: (body.priority as TaskPriority) || 'medium',
+      assignedTo: body.assignedTo,
       agentCodeName: body.agentCodeName,
-    });
+      project: body.project,
+      parentId: body.parentId,
+    };
 
-    // Create issue in Beads
-    const bead = await createIssue(beadParams);
-
-    // Convert back to Task format for response
-    // The mapper will extract project from issue ID (e.g., "clawd-abc123" → "clawd")
-    const task = beadToTask(bead);
-
+    const task = await taskTracker.createTask(taskInput);
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
     console.error('API Error (POST /tasks):', error);
-
-    if (error instanceof BeadsError) {
-      return NextResponse.json(
-        { error: error.message, stderr: error.stderr },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
   }
 }
@@ -98,41 +67,25 @@ export async function PATCH(
   try {
     const updates = await request.json();
 
-    // Map Fleet Commander updates to Beads format
-    const beadUpdates: {
-      title?: string;
-      description?: string;
-      priority?: number;
-      status?: string;
-      assignee?: string;
-      labels?: string[];
-    } = {};
+    const updateInput: UpdateTaskInput = {};
 
-    if (updates.title) beadUpdates.title = updates.title;
-    if (updates.description) beadUpdates.description = updates.description;
-    if (updates.priority !== undefined) beadUpdates.priority = mapPriorityToBead(updates.priority);
-    if (updates.status) beadUpdates.status = mapStatusToBead(updates.status);
+    if (updates.title) updateInput.title = updates.title;
+    if (updates.description) updateInput.description = updates.description;
+    if (updates.priority) updateInput.priority = updates.priority as TaskPriority;
+    if (updates.status) updateInput.status = updates.status as TaskStatus;
     if (updates.assignedTo) {
-      beadUpdates.assignee = updates.assignedTo === 'JORDAN' ? undefined : updates.assignedTo;
+      updateInput.assignedTo = updates.assignedTo === 'JORDAN' ? undefined : updates.assignedTo;
     }
 
-    // Update issue in Beads
-    const bead = await updateIssue(params.id, beadUpdates);
+    const task = await taskTracker.updateTask(params.id, updateInput);
 
-    // Convert back to Task format for response
-    const task = beadToTask(bead);
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
 
     return NextResponse.json(task);
   } catch (error) {
     console.error('API Error (PATCH /tasks/[id]):', error);
-
-    if (error instanceof BeadsError) {
-      return NextResponse.json(
-        { error: error.message, stderr: error.stderr },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
   }
 }
@@ -146,44 +99,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const result = await deleteIssue(params.id);
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('API Error (DELETE /tasks/[id]):', error);
+    const success = await taskTracker.deleteTask(params.id);
 
-    if (error instanceof BeadsError) {
-      return NextResponse.json(
-        { error: error.message, stderr: error.stderr },
-        { status: 500 }
-      );
+    if (!success) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: false, error: 'Failed to delete task' }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('API Error (DELETE /tasks/[id]):', error);
+    return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 });
   }
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-import type { TaskPriority, TaskStatus } from '@/lib/types/tracker';
-
-function mapPriorityToBead(priority: TaskPriority): number {
-  const priorityMap: Record<TaskPriority, number> = {
-    'urgent': 0,
-    'high': 1,
-    'medium': 2,
-    'low': 3,
-  };
-  return priorityMap[priority] || 2;
-}
-
-function mapStatusToBead(status: TaskStatus): string {
-  const statusMap: Record<TaskStatus, string> = {
-    'todo': 'todo',
-    'in-progress': 'in-progress',
-    'review': 'review',
-    'done': 'done',
-  };
-  return statusMap[status] || 'open';
 }
