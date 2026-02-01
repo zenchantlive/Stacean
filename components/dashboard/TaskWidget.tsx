@@ -6,7 +6,8 @@ import { TaskTrackerNav, TaskTrackerHeader } from "./tracker-nav/TaskTrackerNav"
 import { ObjectiveStackView } from "./views/ObjectiveStackView";
 import { AgentLensView } from "./views/AgentLensView";
 import { EnergyMapView } from "./views/EnergyMapView";
-import { Task, TaskStatus, ViewType, AgentSession } from "@/lib/types/tracker-new";
+import { CreateTaskSheet } from "./CreateTaskSheet";
+import { Task, TaskStatus, ViewType, AgentSession, TaskPriority } from "@/lib/types/tracker-new";
 import "@/lib/styles/task-tracker-theme.css";
 
 // ============================================================================
@@ -53,6 +54,7 @@ export function TaskWidget() {
   const [agents, setAgents] = useState<AgentSession[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>("objective-stack");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const tasks = useMemo(() => rawTasks.map(normalizeTask), [rawTasks]);
 
@@ -107,8 +109,29 @@ export function TaskWidget() {
   };
 
   const handleCreateTask = () => {
-    // TODO: wire Task Creation Flow (clawd-e1f)
-    console.info("Create Task flow pending");
+    setIsCreateOpen(true);
+  };
+
+  const handleSubmitTask = async (payload: {
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    project: string;
+    parentId?: string;
+  }) => {
+    await fetch("/api/tracker/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: payload.title,
+        description: payload.description,
+        priority: payload.priority,
+        project: payload.project,
+        parentId: payload.parentId,
+        assignedTo: "JORDAN",
+      }),
+    });
+    fetchTasks();
   };
 
   return (
@@ -117,6 +140,12 @@ export function TaskWidget() {
         currentView={currentView}
         onViewChange={setCurrentView}
         onCreateTask={handleCreateTask}
+      />
+
+      <CreateTaskSheet
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreate={handleSubmitTask}
       />
 
       <div className="flex flex-col min-h-screen md:pl-16">
