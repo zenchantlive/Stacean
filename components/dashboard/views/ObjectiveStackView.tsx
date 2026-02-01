@@ -237,6 +237,12 @@ function ObjectiveCard({
             )}
           </div>
 
+          {objective.description && (
+            <p className="text-xs text-[#9a8f86] mb-2">
+              {objective.description}
+            </p>
+          )}
+
           {/* Metadata */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Status Chip */}

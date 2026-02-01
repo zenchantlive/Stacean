@@ -112,7 +112,11 @@ export function TaskWidget() {
   };
 
   return (
-    <div className="task-tracker relative w-full h-full min-h-screen bg-[#0f0d0c] text-[#f2efed]">
+    <div className="task-tracker relative w-full h-full min-h-screen bg-[#0f0d0c] text-[#f2efed] overflow-hidden">
+      {/* Aurora backdrop */}
+      <div className="pointer-events-none absolute -top-32 -left-24 h-72 w-72 rounded-full bg-[#6fa5a2]/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#b46b4f]/10 blur-[120px]" />
+
       <TaskTrackerNav
         currentView={currentView}
         onViewChange={setCurrentView}
@@ -125,7 +129,7 @@ export function TaskWidget() {
         onCreate={handleSubmitTask}
       />
 
-      <div className="flex flex-col min-h-screen md:pl-16">
+      <div className="relative flex flex-col min-h-screen md:pl-16">
         <TaskTrackerHeader
           currentView={currentView}
           onCreateTask={handleCreateTask}

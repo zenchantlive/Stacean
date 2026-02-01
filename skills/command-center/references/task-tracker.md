@@ -39,9 +39,9 @@ Redesign + operate the Task Tracker UI with mobile-first navigation and three pr
 - Status mapping lives in `blog/lib/utils/tracker-mapping.ts`
 
 ## File Map
-- `blog/components/dashboard/TaskWidget.tsx`
-- `blog/components/dashboard/views/ObjectiveStackView.tsx`
-- `blog/components/dashboard/views/AgentLensView.tsx`
-- `blog/components/dashboard/views/EnergyMapView.tsx`
-- `blog/components/dashboard/CreateTaskSheet.tsx`
-- `blog/lib/styles/task-tracker-theme.css`
+- `components/dashboard/TaskWidget.tsx`
+- `components/dashboard/views/ObjectiveStackView.tsx`
+- `components/dashboard/views/AgentLensView.tsx`
+- `components/dashboard/views/EnergyMapView.tsx`
+- `components/dashboard/CreateTaskSheet.tsx`
+- `lib/styles/task-tracker-theme.css`

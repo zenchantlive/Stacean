@@ -26,7 +26,7 @@ export function EnergyMapView({ tasks, onTaskClick }: EnergyMapViewProps) {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6">
-      <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Object.entries(ENERGY_BANDS).map(([band, config]) => {
           const Icon = BAND_ICONS[band as EnergyBand];
           const items = bandTasks(band as EnergyBand);

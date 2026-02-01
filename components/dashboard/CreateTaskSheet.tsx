@@ -25,7 +25,7 @@ export function CreateTaskSheet({ isOpen, onClose, onCreate }: CreateTaskSheetPr
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
-  const [project, setProject] = useState(PROJECTS[0]?.id || "");
+  const [project, setProject] = useState<string>(PROJECTS[0]?.id || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,7 +95,7 @@ export function CreateTaskSheet({ isOpen, onClose, onCreate }: CreateTaskSheetPr
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
             className="w-full md:max-w-xl bg-[#141110] border border-white/10 rounded-t-3xl md:rounded-3xl p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
