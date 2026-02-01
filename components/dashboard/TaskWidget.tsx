@@ -25,6 +25,7 @@ export function TaskWidget() {
     try {
       const tasksRes = await fetch('/api/tracker/tasks');
       const tasksData = await tasksRes.json();
+      console.log('📊 Tasks fetched:', Array.isArray(tasksData) ? tasksData.length : 'not array');
       setTasks(Array.isArray(tasksData) ? tasksData : []);
     } catch (err) {
       console.error("Failed to fetch tracker data:", err);
@@ -122,6 +123,11 @@ export function TaskWidget() {
             exit={{ opacity: 0, scale: 1.05 }}
             className="absolute inset-0 p-4 flex flex-col"
           >
+            {/* Debug: Task Count */}
+            <div className="flex-none mb-4 text-[10px] text-zinc-500 font-mono">
+              📊 {filteredTasks.length} tasks total | {activeTasks.length} active
+            </div>
+
             {/* Quick Add Input */}
             <form onSubmit={createTask} className="flex gap-2 mb-4 flex-none">
               <div className="flex-1 relative">
