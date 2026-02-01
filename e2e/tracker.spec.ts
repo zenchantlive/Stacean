@@ -84,6 +84,32 @@ test.describe('Fleet Commander / Task Tracker', () => {
 
     // Refresh UI and verify task appears in Active Task Bar
     await page.reload();
+    // Wait for widget to load after reload
+    await page.waitForTimeout(1000);
+    await expect(page.getByText(taskTitle)).toBeVisible();
+  });
+
+  test('should filter tasks by project', async ({ page }) => {
+    // Go to Atlas Cockpit URL (clawd project)
+    await page.goto(`${BASE_URL}?project=clawd`);
+    await expect(page.getByText('To Do')).toBeVisible();
+    
+    // Create a task for clawd project
+    const taskTitle = `Clawd Task ${Date.now()}`;
+    const createResponse = await page.request.post(`${BASE_URL}/api/tracker/tasks?project=clawd`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({
+        title: taskTitle,
+        priority: 'medium',
+      }),
+    });
+    expect(createResponse.status()).toBe(201);
+    
+    // Verify task appears in list
+    await expect(page.getByText(taskTitle)).toBeVisible();
+    
+    // Switch to 'all projects' - task should still be visible
+    await page.goto(BASE_URL);
     await expect(page.getByText(taskTitle)).toBeVisible();
   });
 

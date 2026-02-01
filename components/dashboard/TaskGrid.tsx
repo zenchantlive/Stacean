@@ -40,11 +40,15 @@ const COLUMNS: TaskStatus[] = ["todo", "in-progress", "review", "done"];
 interface TaskGridProps {
   tasks: Task[];
   selectedTaskId: string | null;
+  selectedProject: string | null;
   onSelect: (taskId: string | null) => void;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
-export function TaskGrid({ tasks, selectedTaskId, onSelect, onUpdateTask }: TaskGridProps) {
+export function TaskGrid({ tasks, selectedTaskId, selectedProject, onSelect, onUpdateTask }: TaskGridProps) {
+  const filteredTasks = selectedProject 
+    ? tasks.filter(t => t.project === selectedProject)
+    : tasks;
   const groupedTasks = useMemo(() => {
     const groups: Record<TaskStatus, Task[]> = {
       todo: [],
@@ -53,7 +57,7 @@ export function TaskGrid({ tasks, selectedTaskId, onSelect, onUpdateTask }: Task
       done: [],
     };
 
-    tasks.forEach(task => {
+    filteredTasks.forEach(task => {
       if (groups[task.status]) groups[task.status].push(task);
     });
 

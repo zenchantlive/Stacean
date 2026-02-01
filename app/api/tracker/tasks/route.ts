@@ -4,9 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   listIssues,
-  getIssue,
-  createIssue as createIssueUncached,
-  updateIssue as updateIssueUncached,
+  getIssue as getIssueUncached,
+  createIssue,
+  updateIssue,
   closeIssue as closeIssueUncached,
   deleteIssue,
   BeadsError,
@@ -17,10 +17,19 @@ import { beadToTask, taskToBead } from '@/lib/integrations/beads/mapper';
 // GET /api/tracker/tasks - List all tasks
 // ============================================================================
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const beads = await listIssues();
     const tasks = beads.map(beadToTask);
+
+    // Filter by project if query param provided
+    const { searchParams } = new URL(request.url);
+    const project = searchParams.get('project');
+
+    if (project && project !== 'all') {
+      return NextResponse.json(tasks.filter(t => t.project === project));
+    }
+
     return NextResponse.json(tasks);
   } catch (error) {
     console.error('API Error (GET /tasks):', error);
@@ -57,9 +66,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Create issue in Beads
-    const bead = await createIssueUncached(beadParams);
+    const bead = await createIssue(beadParams);
 
     // Convert back to Task format for response
+    // The mapper will extract project from issue ID (e.g., "clawd-abc123" → "clawd")
     const task = beadToTask(bead);
 
     return NextResponse.json(task, { status: 201 });
@@ -107,7 +117,7 @@ export async function PATCH(
     }
 
     // Update issue in Beads
-    const bead = await updateIssueUncached(params.id, beadUpdates);
+    const bead = await updateIssue(params.id, beadUpdates);
 
     // Convert back to Task format for response
     const task = beadToTask(bead);

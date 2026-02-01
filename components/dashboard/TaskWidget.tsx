@@ -6,10 +6,14 @@ import { ActiveTaskBar } from "./ActiveTaskBar";
 import { TaskGrid } from "./TaskGrid";
 import { Task, TaskPriority } from "@/lib/types/tracker";
 import { Plus, Terminal } from "lucide-react";
+import { ProjectSelector, PROJECTS } from "./ProjectSelector";
+
+export type { Project } from "./ProjectSelector";
 
 export function TaskWidget() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   
   // Quick Add State
@@ -46,6 +50,7 @@ export function TaskWidget() {
           title: newTaskTitle.trim(),
           priority: newTaskPriority,
           assignedTo: "JORDAN",
+          project: selectedProject || undefined,
         }),
       });
 
@@ -83,6 +88,9 @@ export function TaskWidget() {
   };
 
   const activeTasks = tasks.filter(t => t.status === 'in-progress');
+  const filteredTasks = selectedProject 
+    ? tasks.filter(t => t.project === selectedProject)
+    : tasks;
 
   return (
     <div className="w-full h-full flex flex-col bg-[#09090B] relative overflow-hidden">
@@ -95,6 +103,13 @@ export function TaskWidget() {
           onSelect={(taskId) => handleTaskSelect(taskId)}
           onCreateTask={focusQuickAdd}
         />
+
+        <div className="ml-2">
+          <ProjectSelector
+            selectedProject={selectedProject}
+            onSelect={setSelectedProject}
+          />
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -142,8 +157,9 @@ export function TaskWidget() {
             </form>
 
             <TaskGrid
-              tasks={tasks}
+              tasks={filteredTasks}
               selectedTaskId={selectedTaskId}
+              selectedProject={selectedProject}
               onSelect={handleTaskSelect}
               onUpdateTask={updateTask}
             />
