@@ -86,7 +86,7 @@ export function TaskGrid({ tasks, selectedTaskId, onSelect, onUpdateTask }: Task
     } else {
       setEditData({});
     }
-  }, [selectedTaskId]);
+  }, [expandedTask]);
 
   const handleSave = () => {
     if (!expandedTask) return;
