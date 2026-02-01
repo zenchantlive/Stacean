@@ -3,8 +3,6 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { resolve } from 'path';
-import { existsSync } from 'fs';
 import type { BeadsIssue } from './mapper';
 
 const execAsync = promisify(exec);
@@ -15,24 +13,6 @@ const execAsync = promisify(exec);
 
 const BEADS_EXEC = 'bd';
 const TIMEOUT_MS = 30000; // 30 second timeout
-
-/**
- * Find workspace root by looking for .beads directory
- * Goes up directory tree until it finds .beads/ or hits filesystem root
- */
-function findWorkspaceRoot(startPath: string): string {
-  let currentPath = startPath;
-  
-  while (currentPath !== '/') {
-    if (existsSync(resolve(currentPath, '.beads'))) {
-      return currentPath;
-    }
-    currentPath = resolve(currentPath, '..');
-  }
-  
-  // Fallback to original path if .beads not found
-  return startPath;
-}
 
 // ============================================================================
 // Error Handling
@@ -54,17 +34,14 @@ export class BeadsError extends Error {
  */
 async function execBeads(args: string[]): Promise<any> {
   try {
-    // Find workspace root by searching for .beads directory
-    const workspaceRoot = process.env.CLAWDBOT_WORKSPACE ?? findWorkspaceRoot(process.cwd());
-    
     const { stdout, stderr } = await execAsync(
       `${BEADS_EXEC} ${args.join(' ')}`,
       {
         timeout: TIMEOUT_MS,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
         // CRITICAL: Beads DB location. Must be workspace root.
-        // Uses CLAWDBOT_WORKSPACE env var, or auto-detects .beads location.
-        cwd: workspaceRoot,
+        // Use CLAWDBOT_WORKSPACE env var, fallback to current directory.
+        cwd: process.env.CLAWDBOT_WORKSPACE ?? process.cwd(),
       }
     );
 
