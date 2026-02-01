@@ -1,0 +1,15 @@
+{
+  "typeStats": [
+    {
+      "type": "fact",
+      "count": 4,
+      "avgValueScore": 0.6041666666666667,
+      "retrievalSuccessRate": 0.19604,
+      "lastUpdated": 1769887275775
+    }
+  ],
+  "globalAvgValueScore": 0.6041666666666667,
+  "totalSignals": 2,
+  "helpfulRatio": 1,
+  "lastUpdated": 1769887275775
+}

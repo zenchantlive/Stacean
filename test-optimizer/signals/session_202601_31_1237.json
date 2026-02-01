@@ -1,0 +1,28 @@
+[
+  {
+    "id": "sig_1769891836047_ljb8",
+    "memoryId": "mem_test_1",
+    "event": "memory_retrieved",
+    "sessionId": "test_session",
+    "outcome": {
+      "type": "helpful"
+    },
+    "metadata": {
+      "query": "test query 1"
+    },
+    "timestamp": 1769891836047
+  },
+  {
+    "id": "sig_1769891836047_0rnt",
+    "memoryId": "mem_test_2",
+    "event": "memory_retrieved",
+    "sessionId": "test_session",
+    "outcome": {
+      "type": "helpful"
+    },
+    "metadata": {
+      "query": "test query 2"
+    },
+    "timestamp": 1769891836047
+  }
+]
