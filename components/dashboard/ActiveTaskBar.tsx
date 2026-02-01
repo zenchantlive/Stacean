@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Task } from "@/lib/types/tracker";
-import { Clock, ChevronDown, Play, MoreHorizontal } from "lucide-react";
+import { ChevronDown, Play } from "lucide-react";
 import clsx from "clsx";
 
 // ============================================================================

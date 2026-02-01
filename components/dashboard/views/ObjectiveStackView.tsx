@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task, TaskStatus, TaskPriority, isObjective, getChildTasks, isParentReady } from '@/lib/types/tracker-new';
-import { ChevronDown, ChevronRight, Check, MoreHorizontal, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, Circle } from 'lucide-react';
 import clsx from 'clsx';
 
 // ============================================================================

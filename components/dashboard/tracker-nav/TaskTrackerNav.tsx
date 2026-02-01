@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ViewType, VIEWS } from '@/lib/types/tracker-new';
-import { Layers, Bot, Zap, Search, Plus, X } from 'lucide-react';
+import { Layers, Bot, Zap, Search, Plus } from 'lucide-react';
 import clsx from 'clsx';
 
 // ============================================================================
@@ -31,8 +31,6 @@ const VIEW_ICONS: Record<ViewType, React.ElementType> = {
 // ============================================================================
 
 export function TaskTrackerNav({ currentView, onViewChange, onCreateTask }: TaskTrackerNavProps) {
-  const [fabExpanded, setFabExpanded] = useState(false);
-
   return (
     <>
       {/* Mobile Bottom Dock */}

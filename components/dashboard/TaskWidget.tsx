@@ -58,13 +58,21 @@ export function TaskWidget() {
   };
 
   useEffect(() => {
-    fetchTasks();
-    fetchAgents();
-    const interval = setInterval(() => {
+    let isMounted = true;
+
+    const fetchData = async () => {
+      if (!isMounted) return;
       fetchTasks();
       fetchAgents();
-    }, 5000);
-    return () => clearInterval(interval);
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Update Task (status only for now)
@@ -96,18 +104,27 @@ export function TaskWidget() {
     project: string;
     parentId?: string;
   }) => {
-    await fetch("/api/tracker/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: payload.title,
-        description: payload.description,
-        priority: payload.priority,
-        project: payload.project,
-        parentId: payload.parentId,
-        assignedTo: "JORDAN",
-      }),
-    });
+    try {
+      const res = await fetch("/api/tracker/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: payload.title,
+          description: payload.description,
+          priority: payload.priority,
+          project: payload.project,
+          parentId: payload.parentId,
+          assignedTo: "JORDAN",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+    } catch (err) {
+      console.error("Failed to create task:", err);
+      throw err; // Re-throw so CreateTaskSheet can handle the error
+    }
     fetchTasks();
   };
 

@@ -39,7 +39,7 @@ async function execBeads(args: string[]): Promise<any> {
       {
         timeout: TIMEOUT_MS,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-        cwd: '/home/clawdbot/clawd',
+        cwd: process.env.BEADS_CWD || process.cwd(),
       }
     );
 

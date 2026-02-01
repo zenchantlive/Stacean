@@ -79,27 +79,3 @@ export async function DELETE(
     return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 });
   }
 }
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-function mapPriorityToBead(priority: TaskPriority): number {
-  const priorityMap: Record<TaskPriority, number> = {
-    'urgent': 0,
-    'high': 1,
-    'medium': 2,
-    'low': 3,
-  };
-  return priorityMap[priority] || 2;
-}
-
-function mapStatusToBead(status: TaskStatus): string {
-  const statusMap: Record<TaskStatus, string> = {
-    'todo': 'todo',
-    'in-progress': 'in-progress',
-    'review': 'review',
-    'done': 'done',
-  };
-  return statusMap[status] || 'open';
-}

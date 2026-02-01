@@ -22,7 +22,7 @@ export interface TaskContext {
 export interface Task {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   status: TaskStatus;
   priority: TaskPriority;
   assignedTo?: string; // Agent Session ID or 'JORDAN'
@@ -36,7 +36,7 @@ export interface Task {
 
 export interface CreateTaskInput {
   title: string;
-  description?: string;
+  description: string;
   priority?: TaskPriority; // Default: medium
   parentId?: string;
   assignedTo?: string;
@@ -194,7 +194,7 @@ const BEADS_STATUS_MAP: Record<TaskStatus, string> = {
   'todo': 'open',
   'in-progress': 'in_progress',
   'review': 'review',
-  'done': 'closed',
+  'done': 'done',
 };
 
 const BEADS_PRIORITY_MAP: Record<TaskPriority, number> = {

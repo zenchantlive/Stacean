@@ -38,13 +38,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
+    // Support project from query param or body
+    const { searchParams } = new URL(request.url);
+    const queryProject = searchParams.get('project');
+
     const taskInput: CreateTaskInput = {
       title: body.title,
       description: body.description,
       priority: (body.priority as TaskPriority) || 'medium',
       assignedTo: body.assignedTo,
       agentCodeName: body.agentCodeName,
-      project: body.project,
+      project: queryProject || body.project,
       parentId: body.parentId,
     };
 
