@@ -16,10 +16,11 @@ description: "Operate the Command Center dashboard app. Use when building, using
   - `/home/clawdbot/clawd/blog/skills/command-center`
 
 ## Quick Start (Agent)
-1. **Read** `references/task-tracker.md` for behavior + constraints.
-2. **Use** `/blog` only (do not modify outside the app when working on this UI).
-3. **Views**: Objective Stack → Agent Lens → Energy Map.
-4. **Create Task** via the Create Task sheet (required: title, description, priority, project).
+1. **Read** `references/task-tracker.md` for UI behavior + constraints.
+2. **Read** `references/workflow.md` for task lifecycle + heartbeats.
+3. **Use** `/blog` only (do not modify outside the app when working on this UI).
+4. **Views**: Objective Stack → Agent Lens → Energy Map.
+5. **Create Task** via the Create Task sheet (required: title, description, priority, project).
 
 ## User Installation (Skill Folder)
 To let another agent use Command Center:
@@ -36,6 +37,7 @@ To let another agent use Command Center:
 
 ## References
 - `references/task-tracker.md` — UI behavior, constraints, mappings
+- `references/workflow.md` — task lifecycle + heartbeats + templates
 - `references/installation.md` — skill distribution + setup notes
 
 ## Future Modules (placeholders)
