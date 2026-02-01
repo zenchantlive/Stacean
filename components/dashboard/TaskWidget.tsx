@@ -8,35 +8,12 @@ import { AgentLensView } from "./views/AgentLensView";
 import { EnergyMapView } from "./views/EnergyMapView";
 import { CreateTaskSheet } from "./CreateTaskSheet";
 import { Task, TaskStatus, ViewType, AgentSession, TaskPriority } from "@/lib/types/tracker-new";
+import { normalizeStatus, NEW_TO_LEGACY_STATUS } from "@/lib/utils/tracker-mapping";
 import "@/lib/styles/task-tracker-theme.css";
 
 // ============================================================================
 // Helpers
 // ============================================================================
-
-type LegacyStatus = "todo" | "in-progress" | "review" | "done" | "tombstone";
-
-const LEGACY_TO_NEW_STATUS: Record<string, TaskStatus> = {
-  todo: "open",
-  "in-progress": "in_progress",
-  review: "review",
-  done: "done",
-  tombstone: "tombstone",
-  open: "open",
-  in_progress: "in_progress",
-};
-
-const NEW_TO_LEGACY_STATUS: Record<TaskStatus, LegacyStatus> = {
-  open: "todo",
-  in_progress: "in-progress",
-  review: "review",
-  done: "done",
-  tombstone: "tombstone",
-};
-
-function normalizeStatus(status: string): TaskStatus {
-  return LEGACY_TO_NEW_STATUS[status] || "open";
-}
 
 function normalizeTask(raw: any): Task {
   return {
