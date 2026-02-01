@@ -1,0 +1,258 @@
+/**
+ * Task Tracker Theme — Dark Taupe with Aurora Accents
+ * Applied via CSS custom properties for easy theming
+ */
+
+:root {
+  /* Base Colors */
+  --task-bg-0: #0f0d0c;
+  --task-bg-1: #141110;
+  --task-bg-2: #1d1917;
+  --task-bg-3: #25201d;
+  --task-bg-card: #1d1917;
+
+  /* Text */
+  --task-text-0: #f2efed;
+  --task-text-1: #cfc7c1;
+  --task-text-2: #9a8f86;
+  --task-text-muted: #6b615a;
+
+  /* Aurora Accents */
+  --task-sage: #8ea89e;
+  --task-teal: #6fa5a2;
+  --task-moss: #6d7d66;
+  --task-ember: #b46b4f;
+
+  /* Status Colors (mapped from Beads) */
+  --task-status-open: #6fa5a2;
+  --task-status-in-progress: #8ea89e;
+  --task-status-review: #b7a98a;
+  --task-status-done: #7b8b7d;
+  --task-status-tombstone: #5b4b47;
+
+  /* Priority Colors */
+  --task-priority-urgent: #b46b4f;
+  --task-priority-high: #c98d6a;
+  --task-priority-medium: #b7a98a;
+  --task-priority-low: #8ea89e;
+
+  /* Utility */
+  --task-border: rgba(255, 255, 255, 0.06);
+  --task-border-hover: rgba(255, 255, 255, 0.12);
+  --task-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --task-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --task-glow-sage: 0 0 20px rgba(142, 168, 158, 0.15);
+  --task-glow-teal: 0 0 20px rgba(111, 165, 162, 0.15);
+  --task-glow-ember: 0 0 20px rgba(180, 107, 79, 0.15);
+
+  /* Spacing */
+  --task-spacing-xs: 0.25rem; /* 4px */
+  --task-spacing-sm: 0.5rem;  /* 8px */
+  --task-spacing-md: 1rem;    /* 16px */
+  --task-spacing-lg: 1.5rem;  /* 24px */
+  --task-spacing-xl: 2rem;    /* 32px */
+  --task-spacing-2xl: 2.5rem; /* 40px */
+
+  /* Border Radius */
+  --task-radius-sm: 0.375rem;  /* 6px */
+  --task-radius-md: 0.5rem;    /* 8px */
+  --task-radius-lg: 0.75rem;   /* 12px */
+  --task-radius-xl: 1rem;      /* 16px */
+  --task-radius-full: 999px;   /* Pill/chip */
+
+  /* Transitions */
+  --task-transition-fast: 150ms ease;
+  --task-transition-base: 200ms ease;
+  --task-transition-slow: 300ms ease;
+}
+
+/* Base styles for task tracker components */
+.task-tracker {
+  background-color: var(--task-bg-0);
+  color: var(--task-text-0);
+}
+
+/* Card styles */
+.task-card {
+  background: var(--task-bg-card);
+  border: 1px solid var(--task-border);
+  border-radius: var(--task-radius-lg);
+  box-shadow: var(--task-shadow-sm);
+  transition: all var(--task-transition-base);
+}
+
+.task-card:hover {
+  border-color: var(--task-border-hover);
+  box-shadow: var(--task-shadow);
+  transform: translateY(-2px);
+}
+
+/* Status chips */
+.task-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--task-radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.task-chip-status-open {
+  background: rgba(111, 165, 162, 0.1);
+  color: var(--task-status-open);
+  border-color: rgba(111, 165, 162, 0.2);
+}
+
+.task-chip-status-in-progress {
+  background: rgba(142, 168, 158, 0.1);
+  color: var(--task-status-in-progress);
+  border-color: rgba(142, 168, 158, 0.2);
+}
+
+.task-chip-status-review {
+  background: rgba(183, 169, 138, 0.1);
+  color: var(--task-status-review);
+  border-color: rgba(183, 169, 138, 0.2);
+}
+
+.task-chip-status-done {
+  background: rgba(123, 139, 125, 0.1);
+  color: var(--task-status-done);
+  border-color: rgba(123, 139, 125, 0.2);
+}
+
+.task-chip-status-tombstone {
+  background: rgba(91, 75, 71, 0.1);
+  color: var(--task-status-tombstone);
+  border-color: rgba(91, 75, 71, 0.2);
+}
+
+/* Priority indicators */
+.task-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.task-dot-urgent {
+  background: var(--task-priority-urgent);
+  box-shadow: 0 0 8px var(--task-priority-urgent);
+}
+
+.task-dot-high {
+  background: var(--task-priority-high);
+}
+
+.task-dot-medium {
+  background: var(--task-priority-medium);
+}
+
+.task-dot-low {
+  background: var(--task-priority-low);
+}
+
+/* Aurora glow effects */
+.task-glow-sage {
+  box-shadow: var(--task-glow-sage);
+}
+
+.task-glow-teal {
+  box-shadow: var(--task-glow-teal);
+}
+
+.task-glow-ember {
+  box-shadow: var(--task-glow-ember);
+}
+
+/* Mobile bottom dock */
+.task-mobile-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--task-bg-1);
+  border-top: 1px solid var(--task-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: var(--task-spacing-sm) var(--task-spacing-md);
+  padding-bottom: max(var(--task-spacing-sm), env(safe-area-inset-bottom));
+  z-index: 50;
+}
+
+/* Desktop left rail */
+.task-desktop-rail {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 64px;
+  background: var(--task-bg-1);
+  border-right: 1px solid var(--task-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--task-spacing-md) 0;
+  z-index: 50;
+}
+
+/* FAB (Floating Action Button) */
+.task-fab {
+  position: fixed;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  right: var(--task-spacing-md);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--task-sage), var(--task-teal));
+  color: var(--task-bg-0);
+  border: none;
+  box-shadow: var(--task-glow-teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--task-transition-base);
+  z-index: 100;
+}
+
+.task-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 24px rgba(111, 165, 162, 0.4);
+}
+
+.task-fab:active {
+  transform: scale(0.95);
+}
+
+/* Responsive utilities */
+@media (min-width: 768px) {
+  .task-mobile-dock {
+    display: none;
+  }
+
+  .task-desktop-rail {
+    display: flex;
+  }
+
+  .task-fab {
+    bottom: var(--task-spacing-xl);
+    right: var(--task-spacing-xl);
+  }
+}
+
+@media (max-width: 767px) {
+  .task-desktop-rail {
+    display: none;
+  }
+
+  .task-mobile-dock {
+    display: flex;
+  }
+
+  .task-fab {
+    width: 48px;
+    height: 48px;
+  }
+}
