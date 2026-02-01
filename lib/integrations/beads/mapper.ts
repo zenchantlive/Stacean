@@ -3,6 +3,25 @@
 
 import type { Task, TaskStatus, TaskPriority } from '../../types/tracker';
 
+// ============================================================================
+// Project Configuration
+// ============================================================================
+
+export const PROJECT_PREFIXES: Record<string, { name: string; url?: string }> = {
+  'clawd': { name: 'Atlas Cockpit', url: 'http://localhost:3000' },
+  'asset': { name: 'Asset-Hatch', url: 'https://asset-hatch.vercel.app' },
+  'catwalk': { name: 'Catwalk Live', url: 'https://catwalk.live' },
+  'feed': { name: 'TheFeed', url: 'https://the-feed.vercel.app' },
+};
+
+/**
+ * Extract project prefix from issue ID (e.g., "clawd-abc123" -> "clawd")
+ */
+function extractProject(issueId: string): string {
+  const prefix = issueId.split('-')[0];
+  return PROJECT_PREFIXES[prefix] ? prefix : 'clawd';
+}
+
 export type BeadsIssueType =
   | 'task'
   | 'bug'
@@ -65,6 +84,8 @@ export function beadToTask(bead: BeadsIssue): Task {
     priority: mapBeadPriorityToTaskPriority(bead.priority),
     assignedTo: bead.assignee || 'JORDAN',
     agentCodeName: bead.labels?.find(l => l.startsWith('agent:'))?.replace('agent:', ''),
+    project: extractProject(bead.id),
+    currentAction: bead.last_activity || undefined,
     context: {
       files: [],
       logs: [],

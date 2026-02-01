@@ -1,5 +1,11 @@
 import { KVAdapter, kv } from './adapter';
 import { randomUUID } from 'crypto';
+import {
+  createIssue as beadsCreateIssue,
+  updateIssue as beadsUpdateIssue,
+  deleteIssue as beadsDeleteIssue,
+  closeIssue as beadsCloseIssue,
+} from '@/lib/integrations/beads/client';
 
 // ============================================================================
 // Types
@@ -16,11 +22,12 @@ export interface TaskContext {
 export interface Task {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   status: TaskStatus;
   priority: TaskPriority;
   assignedTo?: string; // Agent Session ID or 'JORDAN'
   agentCodeName?: string; // "Neon-Hawk"
+  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
   parentId?: string;
   context: TaskContext;
   createdAt: number;
@@ -29,11 +36,12 @@ export interface Task {
 
 export interface CreateTaskInput {
   title: string;
-  description?: string;
+  description: string;
   priority?: TaskPriority; // Default: medium
   parentId?: string;
   assignedTo?: string;
   agentCodeName?: string;
+  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
 }
 
 export interface UpdateTaskInput {
@@ -43,6 +51,7 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   assignedTo?: string;
   parentId?: string;
+  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
   context?: Partial<TaskContext>;
 }
 
@@ -80,6 +89,10 @@ export class TaskTrackerAdapter extends KVAdapter {
     };
 
     await this.set(id, task);
+
+    // Mirror to Beads (best-effort, fails silently on Vercel)
+    await mirrorToBeads('create', task).catch(() => {});
+
     return task;
   }
 
@@ -108,6 +121,10 @@ export class TaskTrackerAdapter extends KVAdapter {
     };
 
     await this.set(id, updated);
+
+    // Mirror to Beads (best-effort, fails silently on Vercel)
+    await mirrorToBeads('update', updated).catch(() => {});
+
     return updated;
   }
 
@@ -148,9 +165,88 @@ export class TaskTrackerAdapter extends KVAdapter {
    * Delete a task
    */
   async deleteTask(id: string): Promise<boolean> {
-    return this.delete(id);
+    // Fetch task first for mirroring
+    const task = await this.getTask(id);
+    if (!task) return false;
+
+    const success = await this.delete(id);
+
+    if (success) {
+      // Mirror to Beads (best-effort, fails silently on Vercel)
+      await mirrorToBeads('delete', task).catch(() => {});
+    }
+
+    return success;
   }
 }
 
 // Export singleton
 export const taskTracker = new TaskTrackerAdapter();
+
+// ============================================================================
+// Beads Mirroring Helper (Dual-Write)
+// ============================================================================
+
+/**
+ * Beads status mapping
+ */
+const BEADS_STATUS_MAP: Record<TaskStatus, string> = {
+  'todo': 'open',
+  'in-progress': 'in_progress',
+  'review': 'review',
+  'done': 'done',
+};
+
+const BEADS_PRIORITY_MAP: Record<TaskPriority, number> = {
+  'low': 3,
+  'medium': 2,
+  'high': 1,
+  'urgent': 0,
+};
+
+/**
+ * Mirror task to Beads (best-effort, fails silently on Vercel)
+ * This is called from KV adapter to keep Beads in sync
+ */
+async function mirrorToBeads(
+  action: 'create' | 'update' | 'delete' | 'close',
+  task: Task
+): Promise<void> {
+  // Skip on Vercel (no Beads CLI available)
+  if (process.env.VERCEL) {
+    return;
+  }
+
+  try {
+    if (action === 'create') {
+      await beadsCreateIssue({
+        title: task.title,
+        description: task.description,
+        priority: BEADS_PRIORITY_MAP[task.priority],
+        assignee: task.assignedTo,
+        labels: [
+          task.agentCodeName ? `agent:${task.agentCodeName}` : undefined,
+          task.project ? `project:${task.project}` : undefined,
+        ].filter(Boolean) as string[],
+      });
+    } else if (action === 'update') {
+      await beadsUpdateIssue(task.id, {
+        title: task.title,
+        description: task.description,
+        priority: BEADS_PRIORITY_MAP[task.priority],
+        status: BEADS_STATUS_MAP[task.status],
+        assignee: task.assignedTo,
+      });
+    } else if (action === 'delete') {
+      await beadsDeleteIssue(task.id);
+    } else if (action === 'close') {
+      await beadsCloseIssue(task.id, 'Closed from KV tracker');
+    }
+  } catch (error) {
+    // Silently fail on Vercel or if Beads isn't available
+    // This is a best-effort mirror, not a critical operation
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Beads mirror failed (non-critical):', error);
+    }
+  }
+}

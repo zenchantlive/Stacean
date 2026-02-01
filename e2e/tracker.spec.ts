@@ -6,7 +6,7 @@ test.describe('Fleet Commander / Task Tracker', () => {
   
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
-    // Wait for the widget to load (TaskGrid or FleetBar)
+    // Wait for the widget to load (TaskGrid + ActiveTaskBar)
     await expect(page.getByText('To Do')).toBeVisible();
   });
 
@@ -29,7 +29,7 @@ test.describe('Fleet Commander / Task Tracker', () => {
     await expect(page.getByText(taskTitle)).toBeVisible();
   });
 
-  test('should open task for editing on click', async ({ page }) => {
+  test('should expand task inline for editing on click', async ({ page }) => {
     const taskTitle = `Edit Test Task ${Date.now()}`;
     
     // 1. Create Task
@@ -48,24 +48,69 @@ test.describe('Fleet Commander / Task Tracker', () => {
     const taskCard = page.getByText(taskTitle).first();
     await expect(taskCard).toBeVisible();
 
-    // 2. Click to open edit modal
+    // 2. Click to expand inline
     await taskCard.click();
     
-    // Wait for modal to appear - it opens in view mode
-    // Look for the modal container
-    await expect(page.locator('.fixed.inset-0')).toBeVisible({ timeout: 5000 });
-    
-    // Verify task info is displayed (view mode)
-    await expect(page.locator('.bg-\\[\\#0A0A0A\\]')).toContainText(taskTitle);
+    // Verify inline editor is visible
+    await expect(page.locator(`input[value="${taskTitle}"]`)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Description')).toBeVisible();
   });
 
-  test('should show Fleet Bar with YOU avatar', async ({ page }) => {
-    // Exact match to avoid matching "Medium" or other partials
-    const youAvatar = page.getByText('YOU', { exact: true });
-    await expect(youAvatar).toBeVisible();
+  test('should show Active Task Bar', async ({ page }) => {
+    // New Task button should be visible
+    await expect(page.getByText('New Task')).toBeVisible();
+  });
+
+  test('should display in-progress task in Active Task Bar', async ({ page }) => {
+    const taskTitle = `Active Task ${Date.now()}`;
+
+    // Create task via API
+    const createResponse = await page.request.post(`${BASE_URL}/api/tracker/tasks`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({
+        title: taskTitle,
+        priority: 'high',
+      }),
+    });
+    expect(createResponse.status()).toBe(201);
+    const createdTask = await createResponse.json();
+
+    // Update to in-progress
+    const updateResponse = await page.request.patch(`${BASE_URL}/api/tracker/tasks/${createdTask.id}`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({ status: 'in-progress' }),
+    });
+    expect(updateResponse.status()).toBe(200);
+
+    // Refresh UI and verify task appears in Active Task Bar
+    await page.reload();
+    // Wait for widget to load after reload
+    await page.waitForTimeout(1000);
+    await expect(page.getByText(taskTitle)).toBeVisible();
+  });
+
+  test('should filter tasks by project', async ({ page }) => {
+    // Go to Atlas Cockpit URL (clawd project)
+    await page.goto(`${BASE_URL}?project=clawd`);
+    await expect(page.getByText('To Do')).toBeVisible();
     
-    // Check for initials "ME" (Exact match)
-    await expect(page.getByText('ME', { exact: true })).toBeVisible();
+    // Create a task for clawd project
+    const taskTitle = `Clawd Task ${Date.now()}`;
+    const createResponse = await page.request.post(`${BASE_URL}/api/tracker/tasks?project=clawd`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({
+        title: taskTitle,
+        priority: 'medium',
+      }),
+    });
+    expect(createResponse.status()).toBe(201);
+    
+    // Verify task appears in list
+    await expect(page.getByText(taskTitle)).toBeVisible();
+    
+    // Switch to 'all projects' - task should still be visible
+    await page.goto(BASE_URL);
+    await expect(page.getByText(taskTitle)).toBeVisible();
   });
 
 });

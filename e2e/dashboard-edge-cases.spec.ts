@@ -4,12 +4,11 @@ const BASE_URL = 'http://localhost:3000';
 
 test.describe('Dashboard Edge Cases - Null Safety', () => {
 
-  test('Bug regression: FleetBar should not crash with empty agents', async ({ page }) => {
+  test('ActiveTaskBar should not crash with empty tasks', async ({ page }) => {
     /**
-     * REPRODUCES THE EXACT BUG:
-     * - FleetBar receives empty agents array (common during startup)
-     * - AgentAvatar receives hardcoded "YOU" agent
-     * - Console error: "Cannot read properties of undefined (reading 'status')"
+     * Regression guard:
+     * - ActiveTaskBar receives empty activeTasks array
+     * - Should render "No active tasks" without console errors
      */
 
     await page.goto(BASE_URL);
@@ -24,14 +23,12 @@ test.describe('Dashboard Edge Cases - Null Safety', () => {
     });
 
     // Wait for multiple render cycles (component polls every 5s)
-    // Give it time to hit the edge case
     await page.waitForTimeout(10000);
 
-    // Find the specific error we're fixing
+    // Find the specific error we're guarding against
     const statusErrors = consoleMessages.filter(msg =>
       msg.type === 'error' &&
-      msg.text.includes('Cannot read properties of undefined') &&
-      msg.text.includes("reading 'status'")
+      msg.text.includes('Cannot read properties of undefined')
     );
 
     // Log all errors for debugging
@@ -46,15 +43,14 @@ test.describe('Dashboard Edge Cases - Null Safety', () => {
     // The bug should NOT appear
     expect(statusErrors.length).toBe(0);
 
-    // FleetBar should still be visible and functional
-    await expect(page.getByText('YOU', { exact: true })).toBeVisible();
-    await expect(page.getByText('ME', { exact: true })).toBeVisible();
+    // ActiveTaskBar should still be visible and functional
+    await expect(page.getByText('New Task')).toBeVisible();
   });
 
-  test('TaskWidget should render without crashing (no agent selected)', async ({ page }) => {
+  test('TaskWidget should render without crashing (no active tasks)', async ({ page }) => {
     /**
-     * Edge case: User loads page, no agent selected yet
-     * Should show "Select an agent to view details" without errors
+     * Edge case: User loads page with no active tasks
+     * Should render the dashboard without errors
      */
 
     await page.goto(BASE_URL);
@@ -73,54 +69,17 @@ test.describe('Dashboard Edge Cases - Null Safety', () => {
     // Wait for initial render
     await page.waitForTimeout(2000);
 
-    // Should see Fleet Bar
-    await expect(page.getByText('YOU', { exact: true })).toBeVisible();
+    // Should see Active Task Bar
+    await expect(page.getByText('New Task')).toBeVisible();
 
     // Should NOT crash with undefined access errors
     const hasUndefinedError = consoleMessages.some(err =>
-      err.text.includes('Cannot read properties of undefined') ||
-      err.text.includes("reading 'status'")
+      err.text.includes('Cannot read properties of undefined')
     );
 
     if (consoleMessages.length > 0) {
       console.log('🔴 Console errors found:', consoleMessages);
     }
-
-    expect(hasUndefinedError).toBe(false);
-  });
-
-  test('Agent selection should work without console errors', async ({ page }) => {
-    /**
-     * Edge case: Clicking on agent avatars should work even if
-     * underlying agent data is incomplete or timing issues occur
-     */
-
-    await page.goto(BASE_URL);
-
-    // Collect console messages
-    const consoleMessages: { type: string; text: string }[] = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') {
-        consoleMessages.push({
-          type: msg.type(),
-          text: msg.text()
-        });
-      }
-    });
-
-    // Click the YOU agent (should be visible)
-    const youAgent = page.getByText('YOU', { exact: true });
-    await expect(youAgent).toBeVisible();
-    await youAgent.click();
-
-    // Wait for UI to update (might show deck view or grid view)
-    await page.waitForTimeout(2000);
-
-    // Should NOT crash
-    const hasUndefinedError = consoleMessages.some(err =>
-      err.text.includes('Cannot read properties of undefined') ||
-      err.text.includes("reading 'status'")
-    );
 
     expect(hasUndefinedError).toBe(false);
   });
@@ -237,14 +196,10 @@ test.describe('Dashboard - Smoke Tests', () => {
     await page.goto(BASE_URL);
 
     // Fleet Bar should be visible
-    await expect(page.getByText('YOU', { exact: true })).toBeVisible();
+    await expect(page.getByText('New Task')).toBeVisible();
 
     // Quick Add input should be visible
     await expect(page.getByPlaceholder('New objective...')).toBeVisible();
-
-    // View toggle buttons should be present
-    const layoutGridIcon = page.locator('svg').nth(0); // First icon (LayoutGrid)
-    await expect(layoutGridIcon).toBeVisible();
 
     // Status: No console errors during these checks
     const consoleErrors: string[] = [];

@@ -20,6 +20,8 @@ export interface Task {
   priority: TaskPriority;
   assignedTo?: string; // Agent Session ID or 'JORDAN'
   agentCodeName?: string; // "Neon-Hawk"
+  project?: string; // Extracted from issue ID prefix (e.g., "clawd", "asset-hatch")
+  currentAction?: string; // Last heartbeat action/log entry
   parentId?: string;
   context: TaskContext;
   createdAt: number;
