@@ -27,6 +27,7 @@ export interface Task {
   priority: TaskPriority;
   assignedTo?: string; // Agent Session ID or 'JORDAN'
   agentCodeName?: string; // "Neon-Hawk"
+  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
   parentId?: string;
   context: TaskContext;
   createdAt: number;
@@ -40,6 +41,7 @@ export interface CreateTaskInput {
   parentId?: string;
   assignedTo?: string;
   agentCodeName?: string;
+  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
 }
 
 export interface UpdateTaskInput {
@@ -49,6 +51,7 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   assignedTo?: string;
   parentId?: string;
+  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
   context?: Partial<TaskContext>;
 }
 
