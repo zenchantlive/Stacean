@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Header } from "@/components/layout/Header";
 
 export const metadata: Metadata = {
   title: "Atlas Cockpit",
@@ -14,7 +15,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full bg-[#18181B]">
       <body className="h-full antialiased">
-        {children}
+        <Header />
+        <div className="has-header">
+          {children}
+        </div>
       </body>
     </html>
   );
