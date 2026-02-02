@@ -1,0 +1,25 @@
+#!/bin/bash
+# Beads + Sync Wrapper
+# Runs any bd command, then syncs to KV automatically
+# Usage: bdx create "Task title" -p 1
+#        bdx update clawd-abc123 --status done
+#        bdx close clawd-abc123
+
+set -e
+
+# Get the project root (where package.json lives)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+# Run the actual bd command with all args
+bd "$@"
+
+# Check if the command modified issues (create, update, close, delete)
+SUBCOMMAND="$1"
+if [[ "$SUBCOMMAND" == "create" || "$SUBCOMMAND" == "update" || "$SUBCOMMAND" == "close" || "$SUBCOMMAND" == "delete" ]]; then
+  echo ""
+  echo "🔄 Syncing to KV..."
+  npx tsx scripts/sync-beads-to-kv.ts
+  echo ""
+  echo "✨ Tasks synced to Vercel! Check https://blog-zenchantlives-projects.vercel.app"
+fi

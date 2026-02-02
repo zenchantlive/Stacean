@@ -1,0 +1,12 @@
+# STACEAN PROJECT LOCK
+# Jordan's command center dashboard
+
+ROOT: /home/clawdbot/stacean-repo
+
+IGNORE:
+  - node_modules/
+  - .vercel/
+  - .next/
+  - .git/
+
+# Standard project ignores - safe to edit everything else
