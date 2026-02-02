@@ -4,9 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { TaskWidget } from "@/components/dashboard/TaskWidget";
-import { AgentLensView } from "@/components/dashboard/views/AgentLensView";
-import { ObjectiveStackView } from "@/components/dashboard/views/ObjectiveStackView";
-import { EnergyMapView } from "@/components/dashboard/views/EnergyMapView";
 import { CheckSquare, FolderKanban, Bot, Layers, Zap, Activity, ArrowLeft } from "lucide-react";
 
 type ViewType = "stack" | "lens" | "energy" | "agents";
@@ -54,15 +51,6 @@ export default function FocusedPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const views = [
-    { id: "stack" as ViewType, label: "Objectives", icon: Layers, component: <ObjectiveStackView /> },
-    { id: "lens" as ViewType, label: "Agents", icon: Bot, component: <AgentLensView /> },
-    { id: "energy" as ViewType, label: "Energy", icon: Zap, component: <EnergyMapView /> },
-    { id: "agents" as ViewType, label: "Live", icon: Activity, component: <AgentsPanel agents={agents} currentTask={currentTask} /> },
-  ];
-
-  const activeViewConfig = views.find(v => v.id === activeView);
-
   return (
     <div className="app">
       <Header />
@@ -77,79 +65,57 @@ export default function FocusedPage() {
 
       {/* TABS */}
       <nav className="app-tabs">
-        {views.map(view => {
-          const Icon = view.icon;
-          return (
-            <button
-              key={view.id}
-              className={`tab ${activeView === view.id ? "active" : ""}`}
-              onClick={() => setActiveView(view.id)}
-            >
-              <Icon size={18} />
-              {view.label}
-            </button>
-          );
-        })}
+        <button className={`tab ${activeView === "stack" ? "active" : ""}`} onClick={() => setActiveView("stack")}>
+          <Layers size={18} /> Objectives
+        </button>
+        <button className={`tab ${activeView === "lens" ? "active" : ""}`} onClick={() => setActiveView("lens")}>
+          <Bot size={18} /> Agents
+        </button>
+        <button className={`tab ${activeView === "energy" ? "active" : ""}`} onClick={() => setActiveView("energy")}>
+          <Zap size={18} /> Energy
+        </button>
+        <button className={`tab ${activeView === "agents" ? "active" : ""}`} onClick={() => setActiveView("agents")}>
+          <Activity size={18} /> Live
+        </button>
       </nav>
 
       {/* CONTENT */}
       <main className="app-content">
-        {activeView === "agents" ? (
-          <AgentsPanel agents={agents} currentTask={currentTask} />
-        ) : (
-          <div className="focused-view">
-            {/* Current Atlas Activity */}
-            {currentTask && (
-              <div className="current-activity">
-                <span className="activity-label">Atlas is doing:</span>
-                <span className="activity-value">{currentTask}</span>
-              </div>
-            )}
-            
-            {/* Task View */}
-            <TaskWidget isActive={true} />
+        {/* Current Atlas Activity */}
+        {currentTask && (
+          <div className="current-activity">
+            <span className="activity-label">Atlas is doing:</span>
+            <span className="activity-value">{currentTask}</span>
+          </div>
+        )}
+
+        {/* Task Widget with all views */}
+        <TaskWidget isActive={true} />
+
+        {/* Agents Panel */}
+        {activeView === "agents" && (
+          <div className="agents-panel">
+            <h2>Active Agents</h2>
+            <div className="agents-list">
+              {agents.length === 0 ? (
+                <p className="no-agents">No other agents active</p>
+              ) : (
+                agents.map(agent => (
+                  <div key={agent.id} className="agent-card">
+                    <div className="agent-status">
+                      <span className={`status-dot ${agent.status}`} />
+                      <span className="agent-name">{agent.name}</span>
+                    </div>
+                    {agent.currentTask && (
+                      <p className="agent-task">{agent.currentTask}</p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
       </main>
-    </div>
-  );
-}
-
-// Agents Panel Component
-function AgentsPanel({ agents, currentTask }: { agents: Agent[]; currentTask: string }) {
-  return (
-    <div className="agents-panel">
-      <h2>Active Agents</h2>
-      
-      {currentTask && (
-        <div className="current-atlas">
-          <div className="atlas-header">
-            <Activity size={20} />
-            <span>Atlas</span>
-          </div>
-          <div className="atlas-activity">
-            {currentTask || "Idle"}
-          </div>
-        </div>
-      )}
-
-      <div className="agents-list">
-        {agents.length === 0 ? (
-          <p className="no-agents">No other agents active</p>
-        ) : (
-          agents.map(agent => (
-            <div key={agent.id} className="agent-card">
-              <div className="agent-status">
-                <span className={`status-dot ${agent.status}`} />
-                <span className="agent-name">{agent.name}</span>
-              </div>
-              {agent.currentTask && (
-                <p className="agent-task">{agent.currentTask}</p>
-              )}
-            </div>
-          ))
-        )}
-      </div>
     </div>
   );
 }
