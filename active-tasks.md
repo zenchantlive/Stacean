@@ -1,56 +1,48 @@
-# Active Task: Beads→KV Sync for Real-Time Task Visibility
+# Active Task: Merge Focused UI into Main Page
 
 **Date:** 2026-02-02
-**Status:** ✅ RESOLVED
+**Status:** 🚧 IN PROGRESS
 **Priority:** High
 
 ## Issue
 
-Tasks created via `bd` CLI weren't visible on Vercel deployment UI because:
-- Beads stores issues locally in `.beads/issues.jsonl`
-- KV (Upstash Redis) was empty
-- UI fetches from KV, not Beads
+The `/focused` page has a great task-focused UI but:
+- It's a separate page, not accessible from root `/`
+- The root page shows a broken card grid layout
+- User wants the Focused UI to be the **main** experience
 
-## Solution Implemented
+## Solution
 
-Created a sync script that mirrors Beads → KV:
+Merge `/focused` UI into `app/page.tsx` with a toggle to switch layouts:
 
-### Files Added/Modified:
-- `scripts/sync-beads-to-kv.ts` - New sync script
-- `package.json` - Added `"bd:sync": "npx tsx scripts/sync-beads-to-kv.ts"`
+### Changes:
+- `app/page.tsx` - Rewritten with unified UI
+- Added `viewMode` state: "focused" | "dashboard"
+- Focused mode: Sidebar navigation, task list, agent view
+- Dashboard mode: Original card grid (as fallback)
+- Toggle button in sidebar/header to switch views
 
-### Sync Script Features:
-- Fetches all open issues from Beads via `bd list --json`
-- Converts Beads issues to KV task format
-- Writes to Upstash KV with `tracker:task:{id}` keys
-- Cleans up closed tasks from KV
+## Features
+
+### Focused Mode (Default)
+- Left sidebar with nav: Objectives | Agents | Energy | Live
+- Main content area with task list or agent grid
+- Atlas status indicator (online/offline)
+- Current activity banner
+
+### Dashboard Mode
+- Header with status and view toggle
+- Card grid showing Tasks, Agents, Quick Create
+- Links to detailed views
 
 ## Usage
 
-After creating a bead:
-```bash
-# Create a bead
-bd create "My new task" -p 1
+Default view is now **Focused Mode**. Toggle to Dashboard if needed.
 
-# Sync to KV (pushes to Vercel in real-time)
-npm run bd:sync
+## Files Modified
+- `app/page.tsx` - Unified page with view toggle
 
-# Or sync all beads
-npm run bd:sync
-```
-
-## Sync Results
-
-- ✅ 13 open beads synced to KV
-- ✅ 39 stale tasks cleaned up
-- ✅ Vercel deployment now shows tasks in real-time
-
-## Next Steps (Optional)
-
-1. **Automate sync** - Could add a git hook or beads daemon hook
-2. **Bidirectional sync** - Currently Beads → KV only
-3. **Watch mode** - Auto-sync on Beads file changes
-
----
-
-*Previous issue (Tasks Not Displaying) resolved by implementing this sync mechanism.*
+## Next Steps
+- [ ] Verify responsive mobile layout
+- [ ] Test toggle between views
+- [ ] Deploy to Vercel
