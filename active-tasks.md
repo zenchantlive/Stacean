@@ -1,48 +1,51 @@
-# Active Task: Merge Focused UI into Main Page
+# Active Task: UI Rewrite - Responsive + Visual Differentiation
 
 **Date:** 2026-02-02
-**Status:** 🚧 IN PROGRESS
+**Status:** ✅ COMPLETED
 **Priority:** High
 
-## Issue
+## Changes Made
 
-The `/focused` page has a great task-focused UI but:
-- It's a separate page, not accessible from root `/`
-- The root page shows a broken card grid layout
-- User wants the Focused UI to be the **main** experience
+### 1. Mobile Responsive Layout ✅
+- Desktop sidebar (260px) with `marginLeft` offset
+- Mobile: Hamburger menu + bottom nav
+- Breakpoint at 768px
 
-## Solution
+### 2. Visual Differentiation Between Views ✅
 
-Merge `/focused` UI into `app/page.tsx` with a toggle to switch layouts:
+| View | Content | Visual Distinction |
+|------|---------|-------------------|
+| **Objectives** | 4-column Kanban (Todo → Done) | Status-colored columns + task cards |
+| **Agents** | Rich cards with glow effect | Status colors, current task, stats |
+| **Energy** | Priority bands (urgent→low) | Color intensity, glow effects |
+| **Live** | Activity feed with timestamps | Pulsing dots, chronological list |
 
-### Changes:
-- `app/page.tsx` - Rewritten with unified UI
-- Added `viewMode` state: "focused" | "dashboard"
-- Focused mode: Sidebar navigation, task list, agent view
-- Dashboard mode: Original card grid (as fallback)
-- Toggle button in sidebar/header to switch views
+### 3. Rich Task Organization ✅
+- **Objectives View**: Grouped by status columns (Todo/In Progress/Review/Done)
+- **Energy View**: Priority bands with visual intensity
+- Task cards show: title, description, agent, timestamp, priority badge
 
-## Features
+### 4. Rich Agent Cards ✅
+- Name + status with glow effect
+- Current task highlighted
+- Last activity timestamp
+- Stats placeholder
 
-### Focused Mode (Default)
-- Left sidebar with nav: Objectives | Agents | Energy | Live
-- Main content area with task list or agent grid
-- Atlas status indicator (online/offline)
-- Current activity banner
-
-### Dashboard Mode
-- Header with status and view toggle
-- Card grid showing Tasks, Agents, Quick Create
-- Links to detailed views
-
-## Usage
-
-Default view is now **Focused Mode**. Toggle to Dashboard if needed.
+### 5. Live Activity Feed ✅
+- Combined agent + task activity
+- Pulsing status dots
+- Relative timestamps ("5m ago")
 
 ## Files Modified
-- `app/page.tsx` - Unified page with view toggle
+- `app/page.tsx` - Complete rewrite (~800 lines)
 
-## Next Steps
-- [ ] Verify responsive mobile layout
-- [ ] Test toggle between views
-- [ ] Deploy to Vercel
+## Features Added
+- Mobile hamburger menu
+- Mobile bottom navigation
+- View toggle (Focus/Dashboard)
+- Status glow animations
+- Responsive breakpoints
+
+---
+
+*Previous issues resolved: mobile responsiveness, visual differentiation, task organization.*
