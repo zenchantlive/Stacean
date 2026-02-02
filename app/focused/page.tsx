@@ -2,11 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/Header";
-import { TaskWidget } from "@/components/dashboard/TaskWidget";
-import { Bot, Layers, Zap, Activity, ArrowLeft } from "lucide-react";
-
-type ViewType = "stack" | "lens" | "energy" | "agents";
+import { Layers, Bot, Zap, Activity, ArrowLeft, CheckSquare } from "lucide-react";
 
 interface Agent {
   id: string;
@@ -15,8 +11,28 @@ interface Agent {
   currentTask?: string;
 }
 
+// Simple inline Task Display (since TaskWidget has broken internal nav)
+function TaskDisplay({ view }: { view: string }) {
+  return (
+    <div className="task-display">
+      <div className="task-header">
+        <h2 className="text-xl font-semibold text-white">
+          {view === "stack" && "Objectives"}
+          {view === "lens" && "Agent Lens"}
+          {view === "energy" && "Energy Map"}
+        </h2>
+      </div>
+      <div className="task-empty">
+        <CheckSquare size={48} className="text-[#52525B] mb-4" />
+        <p className="text-[#A1A1AA]">No tasks yet</p>
+        <p className="text-[#71717A] text-sm">Create your first objective to get started</p>
+      </div>
+    </div>
+  );
+}
+
 export default function FocusedPage() {
-  const [activeView, setActiveView] = useState<ViewType>("stack");
+  const [activeView, setActiveView] = useState<string>("stack");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [currentTask, setCurrentTask] = useState<string>("");
   const [isOnline, setIsOnline] = useState(false);
@@ -55,185 +71,119 @@ export default function FocusedPage() {
   }, []);
 
   const navItems = [
-    { id: "stack" as ViewType, icon: Layers, label: "Objectives" },
-    { id: "lens" as ViewType, icon: Bot, label: "Agents" },
-    { id: "energy" as ViewType, icon: Zap, label: "Energy" },
-    { id: "agents" as ViewType, icon: Activity, label: "Live" },
+    { id: "stack", icon: Layers, label: "Objectives" },
+    { id: "lens", icon: Bot, label: "Agents" },
+    { id: "energy", icon: Zap, label: "Energy" },
+    { id: "agents", icon: Activity, label: "Live" },
   ];
 
   return (
-    <div className="app-container">
-      {/* Aurora Background */}
-      <div className="aurora top-[-50px] left-[-50px]" />
-      <div className="aurora bottom-[-100px] right-[-50px] opacity-50" />
-
-      {/* Mobile: Horizontal scroll with snap */}
-      <main className="md:hidden w-full h-full flex flex-col overflow-hidden relative z-10">
-        {/* Header */}
-        <Header isOnline={isOnline} currentTask={currentTask} />
-        
-        {/* Back Link */}
-        <div className="px-4 pt-20">
-          <Link href="/" className="back-btn">
-            <ArrowLeft size={16} />
-            Full Dashboard
+    <div className="focused-layout">
+      {/* Mobile Header - Fixed Top */}
+      <header className="mobile-header">
+        <div className="header-left">
+          <Link href="/" className="back-link">
+            <ArrowLeft size={18} />
+            <span className="back-text">Back</span>
           </Link>
         </div>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto pb-24 px-4 pt-4">
-          {/* Current Activity */}
-          {currentTask && (
-            <div className="current-activity mb-4">
-              <span className="activity-label">Atlas:</span>
-              <span className="activity-value">{currentTask}</span>
-            </div>
-          )}
-
-          {/* Views */}
-          {activeView === "stack" && <TaskWidget isActive={true} />}
-          {activeView === "lens" && <TaskWidget isActive={true} />}
-          {activeView === "energy" && <TaskWidget isActive={true} />}
-          
-          {/* Live Agents Panel */}
-          {activeView === "agents" && (
-            <div className="agents-panel">
-              <h2 className="text-lg font-semibold mb-4">Active Agents</h2>
-              {agents.length === 0 ? (
-                <p className="no-agents">No other agents active</p>
-              ) : (
-                agents.map(agent => (
-                  <div key={agent.id} className="agent-card mb-2">
-                    <div className="agent-status">
-                      <span className={`status-dot ${agent.status}`} />
-                      <span className="agent-name">{agent.name}</span>
-                    </div>
-                    {agent.currentTask && (
-                      <p className="agent-task">{agent.currentTask}</p>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+        <div className="header-center">
+          <span className="header-title">Atlas Focus</span>
         </div>
+        <div className="header-right">
+          <span className={`status-dot ${isOnline ? "online" : "offline"}`} />
+        </div>
+      </header>
 
-        {/* Sticky Bottom Nav */}
-        <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#18181B]/90 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-2 z-50 safe-area-pb">
+      {/* Desktop Sidebar - Fixed Left */}
+      <aside className="desktop-sidebar">
+        <div className="sidebar-header">
+          <Link href="/" className="sidebar-logo">
+            <Activity size={24} />
+            <span>Atlas Focus</span>
+          </Link>
+        </div>
+        <nav className="sidebar-nav">
           {navItems.map(item => {
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveView(item.id)}
-                className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${
-                  activeView === item.id
-                    ? "bg-[#F97316] text-white"
-                    : "text-[#71717A] hover:text-white"
-                }`}
+                className={`sidebar-btn ${activeView === item.id ? "active" : ""}`}
               >
-                <Icon size={18} />
-                <span className="text-[10px] mt-0.5">{item.label}</span>
+                <Icon size={20} />
+                <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
-      </main>
-
-      {/* Desktop: Grid layout with sticky top nav */}
-      <main className="hidden md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 p-6 relative z-10 overflow-y-auto h-full pb-32">
-        {/* Sticky Top Nav */}
-        <nav className="fixed top-0 left-0 right-0 h-16 bg-[#18181B]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 z-50">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="back-btn">
-              <ArrowLeft size={16} />
-              Full
-            </Link>
-            <div className="w-8 h-8 rounded-lg bg-[#F97316] flex items-center justify-center">
-              <Activity size={18} className="text-white" />
-            </div>
-            <span className="font-semibold text-white">Atlas Focus</span>
+        <div className="sidebar-footer">
+          <div className="atlas-status">
+            <span className={`status-dot ${isOnline ? "online" : "offline"}`} />
+            <span>Atlas {isOnline ? "Online" : "Offline"}</span>
           </div>
-          
-          <div className="flex items-center gap-1">
-            {navItems.map(item => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveView(item.id)}
-                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
-                    activeView === item.id 
-                      ? "bg-[#F97316]/20 text-[#F97316]" 
-                      : "text-[#71717A] hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-
-        {/* Content Grid */}
-        <div className="col-span-full pt-20">
-          {/* Current Activity Banner */}
           {currentTask && (
-            <div className="current-activity mb-6 max-w-2xl">
-              <span className="activity-label">Atlas is doing:</span>
-              <span className="activity-value">{currentTask}</span>
-            </div>
+            <p className="current-task">{currentTask}</p>
           )}
+        </div>
+      </aside>
 
-          {/* Main Content Area */}
-          <div className="grid grid-cols-2 xl:grid-cols-3 gap-6">
-            {/* Task Widget */}
-            <div className="col-span-2 xl:col-span-2">
-              {activeView === "stack" && <TaskWidget isActive={true} />}
-              {activeView === "lens" && <TaskWidget isActive={true} />}
-              {activeView === "energy" && <TaskWidget isActive={true} />}
-              {activeView === "agents" && (
-                <div className="widget">
-                  <h2 className="text-lg font-semibold mb-4">Active Agents</h2>
-                  {agents.length === 0 ? (
-                    <p className="no-agents">No other agents active</p>
-                  ) : (
-                    <div className="grid gap-3">
-                      {agents.map(agent => (
-                        <div key={agent.id} className="agent-card">
-                          <div className="agent-status">
-                            <span className={`status-dot ${agent.status}`} />
-                            <span className="agent-name">{agent.name}</span>
-                          </div>
-                          {agent.currentTask && (
-                            <p className="agent-task">{agent.currentTask}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Side Panel - Atlas Status */}
-            <div className="widget">
-              <h3 className="text-sm font-medium text-[#71717A] mb-4">Atlas Status</h3>
-              <div className="flex items-center gap-3 mb-4">
-                <span className={`status-indicator ${isOnline ? "online" : "offline"}`} />
-                <span>{isOnline ? "Online" : "Offline"}</span>
-              </div>
-              {currentTask && (
-                <div className="text-sm">
-                  <span className="text-[#71717A]">Current: </span>
-                  <span className="text-white">{currentTask}</span>
-                </div>
-              )}
-            </div>
+      {/* Main Content Area */}
+      <main className="focused-content">
+        {/* Current Activity Banner */}
+        {currentTask && (
+          <div className="activity-banner">
+            <span className="activity-label">Atlas:</span>
+            <span className="activity-value">{currentTask}</span>
           </div>
+        )}
+
+        {/* View Content */}
+        <div className="view-container">
+          {activeView === "agents" ? (
+            <div className="agents-view">
+              <h2 className="view-title">Active Agents</h2>
+              {agents.length === 0 ? (
+                <p className="empty-state">No other agents active</p>
+              ) : (
+                <div className="agents-grid">
+                  {agents.map(agent => (
+                    <div key={agent.id} className="agent-card">
+                      <div className="agent-header">
+                        <span className={`status-dot ${agent.status}`} />
+                        <span className="agent-name">{agent.name}</span>
+                      </div>
+                      {agent.currentTask && (
+                        <p className="agent-task">{agent.currentTask}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <TaskDisplay view={activeView} />
+          )}
         </div>
       </main>
+
+      {/* Mobile Bottom Nav - Fixed Bottom */}
+      <nav className="mobile-nav">
+        {navItems.map(item => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
+              className={`nav-btn ${activeView === item.id ? "active" : ""}`}
+            >
+              <Icon size={22} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
