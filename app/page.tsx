@@ -140,9 +140,10 @@ export default function Home() {
             <button 
               key={item.index}
               onClick={() => {
-                // Scroll to section on desktop
+                // Scroll to section on desktop AND update activeIndex
                 const sections = document.querySelectorAll('.widget');
                 sections[item.index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setActiveIndex(item.index);
               }}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 ${
                 activeIndex === item.index 
