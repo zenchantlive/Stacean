@@ -341,7 +341,7 @@ export default function Home() {
           name: t.agentCodeName,
           status: "assigned",
           currentTask: t.title,
-          lastActivity: t.updatedAt,
+          lastActivity: String(t.updatedAt),
         });
       }
     });
