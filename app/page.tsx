@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
-import { CheckSquare, FolderKanban, MessageSquare, ScrollText, Plus, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { CheckSquare, FolderKanban, MessageSquare, ScrollText, Plus, ChevronRight, Filter, MoreVertical, Settings, User } from "lucide-react";
 
 type Tab = "tasks" | "projects" | "notes" | "ledger";
+type TaskFilter = "all" | "active" | "completed";
 
 interface Task {
   id: string;
@@ -14,64 +14,103 @@ interface Task {
   status: string;
   priority?: string;
   project?: string;
+  createdAt: string;
 }
 
 interface Project {
   id: string;
   name: string;
-  url: string;
+  url?: string;
   status: "active" | "building" | "archived";
-  tasksCount?: number;
+  tasksCount: number;
+  completedTasks: number;
+}
+
+interface Note {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
+interface LedgerEntry {
+  id: string;
+  message: string;
+  timestamp: string;
+  type: string;
 }
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("tasks");
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("active");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [newTask, setNewTask] = useState("");
+  const [newNote, setNewNote] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [tasksRes, projectsRes] = await Promise.all([
+        const [tasksRes, projectsRes, notesRes, ledgerRes] = await Promise.all([
           fetch("/api/tracker/tasks"),
-          fetch("/api/projects")  // Need to create this endpoint
+          fetch("/api/projects"),
+          fetch("/api/notes"),
+          fetch("/api/ledger")
         ]);
         
-        const tasksData = await tasksRes.json();
-        const projectsData = await projectsRes.json();
-        
-        setTasks(Array.isArray(tasksData) ? tasksData : []);
-        setProjects(Array.isArray(projectsData) ? projectsData : []);
+        setTasks(await tasksRes.json());
+        setProjects(await projectsRes.json());
+        setNotes(await notesRes.json());
+        setLedger(await ledgerRes.json());
       } catch (err) {
         console.error("Failed to fetch data:", err);
       }
     };
 
     fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  const activeTasks = tasks.filter(t => t.status !== "done" && t.status !== "closed");
+  const filteredTasks = tasks.filter(t => {
+    if (taskFilter === "active") return t.status !== "done" && t.status !== "closed";
+    if (taskFilter === "completed") return t.status === "done" || t.status === "closed";
+    return true;
+  });
 
   const handleAddTask = () => {
     if (!newTask.trim()) return;
-    // Create task via API
     fetch("/api/tracker/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: newTask,
-        description: "",
-        priority: "medium",
-        project: "",
-        assignedTo: "JORDAN"
-      })
+      body: JSON.stringify({ title: newTask, assignedTo: "JORDAN" })
     }).then(() => {
       setNewTask("");
-      // Refresh tasks
-      fetch("/api/tracker/tasks")
-        .then(res => res.json())
-        .then(data => setTasks(Array.isArray(data) ? data : []));
+      fetch("/api/tracker/tasks").then(r => r.json()).then(d => setTasks(d));
+    });
+  };
+
+  const handleAddNote = () => {
+    if (!newNote.trim()) return;
+    fetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newNote })
+    }).then(() => {
+      setNewNote("");
+      fetch("/api/notes").then(r => r.json()).then(d => setNotes(d));
+    });
+  };
+
+  const toggleTask = (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "done" ? "open" : "done";
+    fetch(`/api/tracker/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus })
+    }).then(() => {
+      fetch("/api/tracker/tasks").then(r => r.json()).then(d => setTasks(d));
     });
   };
 
@@ -87,7 +126,7 @@ export default function Home() {
         >
           <CheckSquare size={18} />
           Tasks
-          <span className="tab-count">{activeTasks.length}</span>
+          <span className="tab-count">{tasks.filter(t => t.status !== "done" && t.status !== "closed").length}</span>
         </button>
         
         <button 
@@ -115,7 +154,7 @@ export default function Home() {
         </button>
       </nav>
 
-      {/* CONTENT AREA */}
+      {/* CONTENT */}
       <main className="app-content">
         {activeTab === "tasks" && (
           <div className="tasks-view">
@@ -128,28 +167,34 @@ export default function Home() {
                 onChange={e => setNewTask(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAddTask()}
               />
-              <button onClick={handleAddTask}>
-                <Plus size={18} />
-              </button>
+              <button onClick={handleAddTask}><Plus size={18} /></button>
             </div>
 
-            {/* Tasks List */}
+            {/* Filter */}
+            <div className="filter-bar">
+              <button className={`filter-btn ${taskFilter === "all" ? "active" : ""}`} onClick={() => setTaskFilter("all")}>All</button>
+              <button className={`filter-btn ${taskFilter === "active" ? "active" : ""}`} onClick={() => setTaskFilter("active")}>Active</button>
+              <button className={`filter-btn ${taskFilter === "completed" ? "active" : ""}`} onClick={() => setTaskFilter("completed")}>Completed</button>
+            </div>
+
+            {/* Task List */}
             <div className="tasks-list">
-              {activeTasks.length === 0 ? (
-                <p className="empty-state">No active tasks</p>
+              {filteredTasks.length === 0 ? (
+                <p className="empty-state">No tasks</p>
               ) : (
-                activeTasks.map(task => (
+                filteredTasks.map(task => (
                   <div key={task.id} className="task-item">
-                    <div className="task-checkbox">
-                      <input type="checkbox" id={task.id} />
+                    <input 
+                      type="checkbox" 
+                      checked={task.status === "done"}
+                      onChange={() => toggleTask(task.id, task.status)}
+                    />
+                    <div className="task-info">
+                      <span className={`task-title ${task.status === "done" ? "completed" : ""}`}>{task.title}</span>
+                      {task.project && <span className="task-project">{task.project}</span>}
                     </div>
-                    <label htmlFor={task.id} className="task-content">
-                      <span className="task-title">{task.title}</span>
-                      {task.project && (
-                        <span className="task-project">{task.project}</span>
-                      )}
-                    </label>
-                    <ChevronRight size={16} className="task-arrow" />
+                    {task.priority && <span className={`priority ${task.priority}`}>{task.priority}</span>}
+                    <MoreVertical size={16} className="task-action" />
                   </div>
                 ))
               )}
@@ -159,23 +204,21 @@ export default function Home() {
 
         {activeTab === "projects" && (
           <div className="projects-view">
-            <h3>Projects</h3>
-            <p className="view-description">
-              Projects are linked to tasks. Manage tasks and see project context together.
-            </p>
-            {/* Projects grid - each links to related tasks */}
+            <div className="section-header">
+              <h3>Projects</h3>
+              <button className="icon-btn"><Plus size={18} /></button>
+            </div>
             <div className="projects-grid">
               {projects.map(project => (
                 <div key={project.id} className="project-card">
                   <div className="project-header">
                     <FolderKanban size={20} />
                     <span className="project-name">{project.name}</span>
-                    <span className={`project-status ${project.status}`}>
-                      {project.status}
-                    </span>
+                    <span className={`status-badge ${project.status}`}>{project.status}</span>
                   </div>
-                  <div className="project-tasks">
-                    {project.tasksCount || 0} tasks
+                  <div className="project-stats">
+                    <span>{project.tasksCount} tasks</span>
+                    <span>{project.completedTasks} done</span>
                   </div>
                 </div>
               ))}
@@ -185,24 +228,54 @@ export default function Home() {
 
         {activeTab === "notes" && (
           <div className="notes-view">
-            <h3>Notes for Atlas</h3>
-            <p className="view-description">
-              Leave notes for Atlas to read and act on.
-            </p>
-            {/* Notes input and list */}
+            <div className="quick-add">
+              <input
+                type="text"
+                placeholder="Leave a note for Atlas..."
+                value={newNote}
+                onChange={e => setNewNote(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleAddNote()}
+              />
+              <button onClick={handleAddNote}><Plus size={18} /></button>
+            </div>
+            <div className="notes-list">
+              {notes.map(note => (
+                <div key={note.id} className="note-item">
+                  <p>{note.content}</p>
+                  <span className="note-time">{new Date(note.createdAt).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {activeTab === "ledger" && (
           <div className="ledger-view">
-            <h3>Activity Ledger</h3>
-            <p className="view-description">
-              See everything Atlas has done.
-            </p>
-            {/* Ledger entries */}
+            <div className="filter-bar">
+              <button className="filter-btn active">All</button>
+              <button className="filter-btn">Today</button>
+              <button className="filter-btn">Week</button>
+            </div>
+            <div className="ledger-list">
+              {ledger.map(entry => (
+                <div key={entry.id} className="ledger-item">
+                  <span className="ledger-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                  <span className="ledger-message">{entry.message}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
+
+      {/* FOOTER */}
+      <footer className="app-footer">
+        <span className="version">v1.0.0</span>
+        <div className="footer-actions">
+          <button className="icon-btn"><Settings size={16} /></button>
+          <button className="icon-btn"><User size={16} /></button>
+        </div>
+      </footer>
     </div>
   );
 }
