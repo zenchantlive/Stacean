@@ -78,7 +78,7 @@ export default function Home() {
         </section>
 
         <section className="widget snap-center min-w-full pt-16 px-6">
-          <TaskWidget />
+          <TaskWidget isActive={activeIndex === 5} />
         </section>
       </main>
 
@@ -105,7 +105,7 @@ export default function Home() {
         </section>
 
         <section className="widget">
-          <TaskWidget />
+          <TaskWidget isActive={activeIndex === 5} />
         </section>
       </main>
       

@@ -26,7 +26,11 @@ function normalizeTask(raw: any): Task {
 // Component
 // ============================================================================
 
-export function TaskWidget() {
+interface TaskWidgetProps {
+  isActive?: boolean;
+}
+
+export function TaskWidget({ isActive = false }: TaskWidgetProps) {
   const [rawTasks, setRawTasks] = useState<any[]>([]);
   const [agents, setAgents] = useState<AgentSession[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -134,11 +138,13 @@ export function TaskWidget() {
       <div className="pointer-events-none absolute -top-32 -left-24 h-72 w-72 rounded-full bg-[#6fa5a2]/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#b46b4f]/10 blur-[120px]" />
 
-      <TaskTrackerNav
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        onCreateTask={handleCreateTask}
-      />
+      {isActive && (
+        <TaskTrackerNav
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          onCreateTask={handleCreateTask}
+        />
+      )}
 
       <CreateTaskSheet
         isOpen={isCreateOpen}
