@@ -1,5 +1,16 @@
 # Agent Instructions
 
+## ALWAYS READ THIS FIRST
+
+**Before starting any work, read the `use-skill` skill.** This is your single source of truth for all available skills and when to use them. It auto-discovers new skills as they're added.
+
+```bash
+# Scan all available skills
+bash skills/use-skill/scripts/scan-skills.sh
+```
+
+## Project Tracking
+
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
 ## Quick Reference
