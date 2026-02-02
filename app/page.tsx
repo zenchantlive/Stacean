@@ -414,6 +414,107 @@ export default function Home() {
   }
 
   // Dashboard Layout (original card grid)
+  // Keyboard navigation state
+  const [focusedCard, setFocusedCard] = useState<number | null>(null);
+
+  // Card definitions for keyboard navigation
+  const cards = [
+    {
+      id: 'tasks',
+      title: 'Tasks',
+      icon: CheckSquare,
+      description: `${tasks.length} active tasks`,
+      action: () => setActiveFocusedView('stack'),
+      color: 'from-orange-500/10 to-orange-600/5',
+      bgColor: '#F97316'
+    },
+    {
+      id: 'agents',
+      title: 'Agents',
+      icon: Bot,
+      description: `${agents.length} active agents`,
+      action: () => setActiveFocusedView('agents'),
+      color: 'from-blue-500/10 to-blue-600/5',
+      bgColor: '#3B82F6'
+    },
+    {
+      id: 'quick-create',
+      title: 'Quick Create',
+      icon: Plus,
+      description: 'Create a new task',
+      action: () => {},
+      color: 'from-green-500/10 to-green-600/5',
+      bgColor: '#22C55E'
+    }
+  ];
+
+  // Keyboard event handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (viewMode !== 'dashboard') return;
+
+      switch (e.key) {
+        case 'Tab':
+          e.preventDefault();
+          if (e.shiftKey) {
+            // Previous card
+            setFocusedCard(prev => {
+              if (prev === null || prev === 0) return cards.length - 1;
+              return prev - 1;
+            });
+          } else {
+            // Next card
+            setFocusedCard(prev => {
+              if (prev === null || prev === cards.length - 1) return 0;
+              return prev + 1;
+            });
+          }
+          break;
+
+        case 'Enter':
+          if (focusedCard !== null) {
+            e.preventDefault();
+            cards[focusedCard].action();
+          }
+          break;
+
+        case 'Escape':
+          setFocusedCard(null);
+          break;
+
+        case 'ArrowRight':
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedCard(prev => {
+            if (prev === null || prev >= cards.length - 1) return 0;
+            return prev + 1;
+          });
+          break;
+
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedCard(prev => {
+            if (prev === null || prev <= 0) return cards.length - 1;
+            return prev - 1;
+          });
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, focusedCard, cards]);
+
+  // Reset focus when switching views
+  useEffect(() => {
+    if (viewMode === 'dashboard') {
+      setFocusedCard(0); // Focus first card by default
+    } else {
+      setFocusedCard(null);
+    }
+  }, [viewMode]);
+
   return (
     <div className="min-h-screen bg-[#09090B]">
       {/* Persistent Header */}
@@ -475,56 +576,83 @@ export default function Home() {
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {/* Tasks Card */}
-            <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-white/5 rounded-2xl p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-11 h-11 rounded-xl bg-[#18181B] flex items-center justify-center border border-white/5">
-                  <CheckSquare className="w-5 h-5 text-[#F97316]" />
-                </div>
-              </div>
-              <h3 className="font-semibold text-white text-lg mb-2">Tasks</h3>
-              <p className="text-sm text-[#A1A1AA] mb-4">{tasks.length} active tasks</p>
-              <button 
-                onClick={() => setActiveFocusedView("stack")}
-                className="flex items-center gap-2 px-4 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-lg text-sm font-medium transition-colors w-full justify-center"
-              >
-                <Layers className="w-4 h-4" />
-                <span>View All Tasks</span>
-              </button>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" role="list" aria-label="Dashboard cards">
+            {cards.map((card, index) => {
+              const Icon = card.icon;
+              const isFocused = focusedCard === index;
 
-            {/* Agents Card */}
-            <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-white/5 rounded-2xl p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-11 h-11 rounded-xl bg-[#18181B] flex items-center justify-center border border-white/5">
-                  <Bot className="w-5 h-5 text-[#3B82F6]" />
+              return (
+                <div
+                  key={card.id}
+                  role="listitem"
+                  tabIndex={0}
+                  onFocus={() => setFocusedCard(index)}
+                  onClick={() => {
+                    card.action();
+                    setFocusedCard(index);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      card.action();
+                    }
+                  }}
+                  className={`
+                    bg-gradient-to-br ${card.color} border border-white/5 rounded-2xl p-6
+                    cursor-pointer transition-all duration-200 outline-none
+                    ${isFocused ? 'ring-2 ring-[#F97316] shadow-lg shadow-[#F97316]/20 scale-[1.02]' : 'hover:border-white/10 hover:scale-[1.01]'}
+                  `}
+                  style={{
+                    transform: isFocused ? 'scale(1.02)' : 'scale(1)',
+                    boxShadow: isFocused ? '0 0 20px rgba(249, 115, 22, 0.3)' : undefined
+                  }}
+                  aria-label={`${card.title} card. ${card.description}. Press Enter to open.`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-11 h-11 rounded-xl bg-[#18181B] flex items-center justify-center border border-white/5">
+                      <Icon className="w-5 h-5" style={{ color: card.bgColor }} />
+                    </div>
+                    {isFocused && (
+                      <span className="text-xs text-[#F97316] font-medium px-2 py-1 bg-[#F97316]/10 rounded">
+                        ⌨️ Enter
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-white text-lg mb-2">{card.title}</h3>
+                  <p className="text-sm text-[#A1A1AA] mb-4">{card.description}</p>
+                  {card.id === 'quick-create' ? (
+                    <div style={{ background: '#27272A', padding: '0.75rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.75rem', color: '#A1A1AA' }}>
+                      npm run bdx create "Task" -p 1
+                    </div>
+                  ) : (
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors w-full justify-center"
+                      style={{ background: card.bgColor }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        card.action();
+                      }}
+                    >
+                      {card.id === 'tasks' && <Layers className="w-4 h-4" />}
+                      {card.id === 'agents' && <Activity className="w-4 h-4" />}
+                      <span>View {card.title}</span>
+                    </button>
+                  )}
                 </div>
-              </div>
-              <h3 className="font-semibold text-white text-lg mb-2">Agents</h3>
-              <p className="text-sm text-[#A1A1AA] mb-4">{agents.length} active agents</p>
-              <button 
-                onClick={() => setActiveFocusedView("agents")}
-                className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-lg text-sm font-medium transition-colors w-full justify-center"
-              >
-                <Activity className="w-4 h-4" />
-                <span>View Agents</span>
-              </button>
-            </div>
+              );
+            })}
+          </div>
 
-            {/* Quick Create Card */}
-            <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-white/5 rounded-2xl p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-11 h-11 rounded-xl bg-[#18181B] flex items-center justify-center border border-white/5">
-                  <Plus className="w-5 h-5 text-[#22C55E]" />
-                </div>
-              </div>
-              <h3 className="font-semibold text-white text-lg mb-2">Quick Create</h3>
-              <p className="text-sm text-[#A1A1AA] mb-4">Create a new task</p>
-              <div style={{ background: '#27272A', padding: '0.75rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.75rem', color: '#A1A1AA' }}>
-                npm run bdx create "Task" -p 1
-              </div>
-            </div>
+          {/* Keyboard Navigation Help */}
+          <div className="mt-8 p-4 bg-[#18181B]/50 border border-white/5 rounded-xl">
+            <p className="text-sm text-[#71717A] text-center">
+              <kbd className="px-2 py-1 bg-[#27272A] rounded text-xs mx-1">Tab</kbd>
+              to navigate between cards
+              <kbd className="px-2 py-1 bg-[#27272A] rounded text-xs mx-1 ml-3">Enter</kbd>
+              to select
+              <kbd className="px-2 py-1 bg-[#27272A] rounded text-xs mx-1 ml-3">Esc</kbd>
+              to deselect
+            </p>
           </div>
         </div>
       </main>
