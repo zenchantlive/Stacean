@@ -1,5 +1,42 @@
 # Agent Instructions
 
+## ALWAYS READ THIS FIRST
+
+**Before starting any work, read the `use-skill` skill.** This is your single source of truth for all available skills and when to use them. It auto-discovers new skills as they're added.
+
+```bash
+# Scan all available skills
+bash skills/use-skill/scripts/scan-skills.sh
+```
+
+## MANDATORY: Always Use Agent Swarm Workflow
+
+**FOR EVERY TASK, ALWAYS USE THE `agent-swarm-workflow` SKILL.**
+
+This is not optional. Do not use `coding-agent` or other single-agent approaches. The swarm workflow is the default and only method for all work.
+
+### Why
+- Parallel execution via multiple agents (Claude Code, Codex, Gemini)
+- Self-coordinating through Agent Mail and Beads
+- Distributed, robust, and self-organizing
+- Quality loops until code is solid
+
+### How
+1. Read `skills/agent-swarm-workflow/SKILL.md` **every time** before starting work
+2. Use the **EXACT prompts** specified in that skill
+3. Spawn agents via NTM: `ntm spawn <project> --cc=3 --cod=2`
+4. Let agents self-coordinate via Agent Mail and BV
+5. Run quality loops (self-review → cross-review → random exploration) until clean
+
+### Never
+- Use single-agent coding tools directly
+- Skip the swarm workflow for "small" tasks
+- Deviate from the prompts in the skill file
+
+**When in doubt: read the skill file again. It has all the exact prompts and procedures.**
+
+## Project Tracking
+
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
 ## Quick Reference
@@ -11,6 +48,23 @@ bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
+
+## Sending Media via WhatsApp
+
+When sending screenshots or images to the user:
+
+```bash
+# Method: Use message tool with filePath parameter
+message action=send target=+15306354284 filePath=/path/to/image.png
+
+# Example with agent-browser screenshot:
+agent-browser open http://localhost:8765/mail
+agent-browser screenshot /tmp/agent-mail.png
+agent-browser close
+message action=send target=+15306354284 filePath=/tmp/agent-mail.png
+```
+
+**Note:** The `media` parameter with file:// URLs doesn't work. Use `filePath` parameter instead.
 
 ## Landing the Plane (Session Completion)
 

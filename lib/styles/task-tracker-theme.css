@@ -166,7 +166,7 @@
   box-shadow: var(--task-glow-ember);
 }
 
-/* Mobile bottom dock */
+/* Mobile bottom dock (default) */
 .task-mobile-dock {
   position: fixed;
   bottom: 0;
@@ -179,6 +179,30 @@
   padding: var(--task-spacing-sm) var(--task-spacing-md);
   padding-bottom: max(var(--task-spacing-sm), env(safe-area-inset-bottom));
   z-index: 50;
+}
+
+/* Mobile top dock (alternative - use .task-mobile-dock-top class) */
+.task-mobile-dock-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--task-bg-1);
+  border-bottom: 1px solid var(--task-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: max(var(--task-spacing-sm), env(safe-area-inset-top)) var(--task-spacing-md) var(--task-spacing-sm);
+  z-index: 50;
+}
+
+/* Content padding to account for mobile dock */
+.task-content-mobile {
+  padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Content padding for top dock */
+.task-content-mobile-top {
+  padding-top: calc(70px + env(safe-area-inset-top, 0px));
 }
 
 /* Desktop left rail */
