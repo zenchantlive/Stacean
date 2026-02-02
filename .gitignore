@@ -51,3 +51,4 @@ system/.beads/last-touched
 
 # bv (beads viewer) local config and caches
 .bv/
+.vercel
