@@ -369,8 +369,13 @@
 }
 
 .status-dot.online { background: var(--color-status-online); }
-.status-dot.busy { background: var(--color-accent); }
-.status-dot.offline { background: var(--color-text-muted); }
+.status-dot.busy { background: var(--color-status-busy); }
+.status-dot.offline { background: var(--color-status-offline); }
+
+/* Safe area padding for mobile notch */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
 
 .agent-name {
   font-weight: var(--font-medium);
@@ -497,6 +502,15 @@
   --space-4: 1rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
+
+  /* Status colors for consistent theming */
+  --color-status-online: #10B981;
+  --color-status-offline: #52525B;
+  --color-status-busy: #F97316;
+
+  /* Theme colors for consistency */
+  --color-accent: #F97316;
+  --color-text-muted: #71717A;
 }
 
 /* Fluid typography */
