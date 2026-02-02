@@ -1,7 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Layers, Bot, Zap, Activity, CheckSquare, Plus, Menu, X, ChevronRight, Clock, Target, Zap as ZapIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  Bot,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Layers,
+  Menu,
+  Target,
+  X,
+  Zap,
+} from "lucide-react";
 
 interface Agent {
   id: string;
@@ -24,7 +36,20 @@ interface Task {
   updatedAt: number | string;
 }
 
-// Utility functions
+const PRIORITY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  urgent: { bg: "rgba(220, 38, 38, 0.2)", border: "#DC2626", text: "#FCA5A5" },
+  high: { bg: "rgba(249, 115, 22, 0.2)", border: "#F97316", text: "#FDBA74" },
+  medium: { bg: "rgba(37, 99, 235, 0.2)", border: "#2563EB", text: "#93C5FD" },
+  low: { bg: "rgba(113, 113, 122, 0.2)", border: "#71717A", text: "#A1A1AA" },
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  todo: "#F97316",
+  "in-progress": "#3B82F6",
+  review: "#8B5CF6",
+  done: "#22C55E",
+};
+
 const formatTime = (timestamp: number | string) => {
   const date = new Date(timestamp);
   const now = new Date();
@@ -32,366 +57,248 @@ const formatTime = (timestamp: number | string) => {
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  
-  if (minutes < 1) return 'Just now';
+  if (minutes < 1) return "Just now";
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   return `${days}d ago`;
 };
 
-const PRIORITY_COLORS = {
-  urgent: { bg: 'rgba(220, 38, 38, 0.2)', border: '#DC2626', text: '#FCA5A5' },
-  high: { bg: 'rgba(249, 115, 22, 0.2)', border: '#F97316', text: '#FDBA74' },
-  medium: { bg: 'rgba(37, 99, 235, 0.2)', border: '#2563EB', text: '#93C5FD' },
-  low: { bg: 'rgba(113, 113, 122, 0.2)', border: '#71717A', text: '#A1A1AA' },
-};
+function CollapsibleSection({
+  title,
+  count,
+  defaultOpen = true,
+  children,
+  right,
+}: {
+  title: string;
+  count?: number;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="section">
+      <button className="section-header" onClick={() => setOpen(!open)}>
+        <div className="section-title">
+          <span className="section-dot" />
+          <span>{title}</span>
+          {typeof count === "number" && (
+            <span className="section-count">{count}</span>
+          )}
+        </div>
+        <div className="section-right">
+          {right}
+          {open ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+        </div>
+      </button>
+      {open && <div className="section-body">{children}</div>}
+    </section>
+  );
+}
 
-const STATUS_COLORS = {
-  todo: '#F97316',
-  'in-progress': '#3B82F6',
-  review: '#8B5CF6',
-  done: '#22C55E',
-};
-
-// ============================================================================
-// View: Objectives (Tasks organized by status)
-// ============================================================================
 function ObjectivesView({ tasks }: { tasks: Task[] }) {
   const columns = [
-    { id: 'todo', label: 'To Do', color: '#F97316' },
-    { id: 'in-progress', label: 'In Progress', color: '#3B82F6' },
-    { id: 'review', label: 'Review', color: '#8B5CF6' },
-    { id: 'done', label: 'Done', color: '#22C55E' },
+    { id: "todo", label: "To Do", color: "#F97316" },
+    { id: "in-progress", label: "In Progress", color: "#3B82F6" },
+    { id: "review", label: "Review", color: "#8B5CF6" },
+    { id: "done", label: "Done", color: "#22C55E" },
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-      {columns.map(col => {
-        const colTasks = tasks.filter(t => t.status === col.id);
+    <div className="kanban">
+      {columns.map((col) => {
+        const colTasks = tasks.filter((t) => t.status === col.id);
         return (
-          <div key={col.id}>
-            <div style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.5rem', 
-              marginBottom: '1rem', padding: '0.75rem',
-              background: `${col.color}15`, borderRadius: '10px',
-              borderLeft: `3px solid ${col.color}`
-            }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: col.color }} />
-              <span style={{ color: 'white', fontWeight: 600, fontSize: '0.875rem' }}>{col.label}</span>
-              <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.1)', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', color: '#A1A1AA' }}>
-                {colTasks.length}
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <CollapsibleSection
+            key={col.id}
+            title={col.label}
+            count={colTasks.length}
+            right={<span className="pill" style={{ borderColor: col.color }} />}
+          >
+            <div className="task-col">
               {colTasks.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#52525B', fontSize: '0.875rem' }}>
-                  No tasks
-                </div>
+                <div className="empty">No tasks</div>
               ) : (
-                colTasks.map(task => (
-                  <div 
-                    key={task.id}
-                    style={{ 
-                      background: '#18181B', border: '1px solid rgba(255,255,255,0.05)',
-                      borderRadius: '12px', padding: '1rem',
-                      borderLeft: `3px solid ${PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS]?.border || '#71717A'}`
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                      <h4 style={{ color: 'white', fontWeight: 500, fontSize: '0.875rem', flex: 1 }}>{task.title}</h4>
-                      <span style={{ 
-                        padding: '0.125rem 0.5rem', borderRadius: '4px', 
-                        fontSize: '0.625rem', fontWeight: 600, textTransform: 'uppercase',
-                        background: PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS]?.bg,
-                        color: PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS]?.text,
-                        marginLeft: '0.5rem'
-                      }}>
-                        {task.priority}
-                      </span>
-                    </div>
-                    {task.description && (
-                      <p style={{ color: '#71717A', fontSize: '0.75rem', marginBottom: '0.5rem' }}>{task.description}</p>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {task.agentCodeName && (
-                        <span style={{ fontSize: '0.625rem', color: '#F97316', background: 'rgba(249,115,22,0.15)', padding: '0.125rem 0.375rem', borderRadius: '4px' }}>
-                          🤖 {task.agentCodeName}
+                colTasks.map((task) => {
+                  const p = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low;
+                  return (
+                    <div
+                      key={task.id}
+                      className="task-card"
+                      style={{ borderLeft: `3px solid ${p.border}` }}
+                    >
+                      <div className="task-top">
+                        <h4>{task.title}</h4>
+                        <span className="badge" style={{ background: p.bg, color: p.text }}>
+                          {task.priority}
                         </span>
-                      )}
-                      <span style={{ fontSize: '0.625rem', color: '#52525B', marginLeft: 'auto' }}>
-                        {formatTime(task.updatedAt)}
-                      </span>
+                      </div>
+                      {task.description && <p>{task.description}</p>}
+                      <div className="task-meta">
+                        {task.agentCodeName && (
+                          <span className="agent-tag">🤖 {task.agentCodeName}</span>
+                        )}
+                        <span className="muted">{formatTime(task.updatedAt)}</span>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
-          </div>
+          </CollapsibleSection>
         );
       })}
     </div>
   );
 }
 
-// ============================================================================
-// View: Agents (Rich agent cards)
-// ============================================================================
-function AgentsView({ agents }: { agents: Agent[] }) {
+function AgentsView({ agents, derived }: { agents: Agent[]; derived: boolean }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-      {agents.length === 0 ? (
-        <div style={{ gridColumn: '1/-1', padding: '4rem', textAlign: 'center', color: '#52525B' }}>
-          <Bot size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-          <p>No agents active</p>
-          <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Agents will appear here when spawned</p>
-        </div>
-      ) : (
-        agents.map(agent => (
-          <div 
-            key={agent.id}
-            style={{ 
-              background: 'linear-gradient(135deg, #18181B 0%, #1a1a1f 100%)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: '16px', padding: '1.5rem',
-              position: 'relative', overflow: 'hidden'
-            }}
-          >
-            {/* Status glow */}
-            <div style={{ 
-              position: 'absolute', top: 0, right: 0, width: '100px', height: '100px',
-              background: agent.status === 'running' ? 'radial-gradient(circle, rgba(34,197,94,0.2) 0%, transparent 70%)' : 'transparent',
-              pointerEvents: 'none'
-            }} />
-
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-              <div style={{ 
-                width: '48px', height: '48px', borderRadius: '12px',
-                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Bot size={24} style={{ color: 'white' }} />
-              </div>
-              <div>
-                <h3 style={{ color: 'white', fontWeight: 600, fontSize: '1rem' }}>{agent.name}</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ 
-                    width: '8px', height: '8px', borderRadius: '50%',
-                    background: agent.status === 'running' ? '#22C55E' : '#71717A',
-                    boxShadow: agent.status === 'running' ? '0 0 8px #22C55E' : 'none'
-                  }} />
-                  <span style={{ 
-                    fontSize: '0.75rem', 
-                    color: agent.status === 'running' ? '#22C55E' : '#71717A',
-                    textTransform: 'capitalize'
-                  }}>
+    <CollapsibleSection
+      title={derived ? "Assigned Agents (Derived)" : "Active Agents"}
+      count={agents.length}
+      right={
+        derived ? <span className="badge-outline">Derived</span> : undefined
+      }
+    >
+      <div className="agent-grid">
+        {agents.length === 0 ? (
+          <div className="empty">No agents active</div>
+        ) : (
+          agents.map((agent) => (
+            <div key={agent.id} className="agent-card">
+              <div className="agent-header">
+                <div className="agent-icon">
+                  <Bot size={18} />
+                </div>
+                <div>
+                  <div className="agent-name">{agent.name}</div>
+                  <div className={`agent-status ${agent.status}`}>
+                    <span className="dot" />
                     {agent.status}
-                  </span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Current Task */}
-            {agent.currentTask && (
-              <div style={{ 
-                background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.2)',
-                borderRadius: '10px', padding: '1rem', marginBottom: '1rem'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <Target size={14} style={{ color: '#F97316' }} />
-                  <span style={{ fontSize: '0.75rem', color: '#F97316', fontWeight: 500 }}>CURRENT TASK</span>
+              {agent.currentTask && (
+                <div className="agent-task">
+                  <Target size={14} />
+                  <span>{agent.currentTask}</span>
                 </div>
-                <p style={{ color: 'white', fontSize: '0.875rem' }}>{agent.currentTask}</p>
-              </div>
-            )}
-
-            {/* Stats */}
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#71717A', fontSize: '0.625rem', marginBottom: '0.25rem' }}>
+              )}
+              <div className="agent-stats">
+                <div>
                   <Clock size={12} />
-                  <span>LAST ACT</span>
+                  {agent.lastActivity ? formatTime(agent.lastActivity) : "Unknown"}
                 </div>
-                <span style={{ color: '#A1A1AA', fontSize: '0.875rem' }}>
-                  {agent.lastActivity ? formatTime(agent.lastActivity) : 'Unknown'}
-                </span>
-              </div>
-              <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#71717A', fontSize: '0.625rem', marginBottom: '0.25rem' }}>
-                  <CheckSquare size={12} />
-                  <span>TASKS</span>
-                </div>
-                <span style={{ color: '#A1A1AA', fontSize: '0.875rem' }}>--</span>
               </div>
             </div>
-          </div>
-        ))
-      )}
-    </div>
+          ))
+        )}
+      </div>
+    </CollapsibleSection>
   );
 }
 
-// ============================================================================
-// View: Energy (Tasks by priority with visual intensity)
-// ============================================================================
 function EnergyView({ tasks }: { tasks: Task[] }) {
-  const priorityOrder = ['urgent', 'high', 'medium', 'low'];
-  
+  const priorities = ["urgent", "high", "medium", "low"];
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {priorityOrder.map(priority => {
-        const pTasks = tasks.filter(t => t.priority === priority);
-        const colors = PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS];
-        
+    <div className="energy">
+      {priorities.map((p) => {
+        const pTasks = tasks.filter((t) => t.priority === p);
+        const colors = PRIORITY_COLORS[p] || PRIORITY_COLORS.low;
         return (
-          <div key={priority}>
-            <div style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem',
-              padding: `0 0.5rem`
-            }}>
-              <ZapIcon 
-                size={20} 
-                style={{ 
-                  color: colors.border,
-                  filter: priority === 'urgent' ? 'drop-shadow(0 0 8px rgba(220,38,38,0.8))' : 
-                          priority === 'high' ? 'drop-shadow(0 0 6px rgba(249,115,22,0.6))' : 'none'
-                }} 
-              />
-              <span style={{ 
-                color: 'white', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.875rem',
-                flex: 1
-              }}>
-                {priority} Energy
-              </span>
-              <span style={{ 
-                background: colors.bg, color: colors.text,
-                padding: '0.25rem 0.75rem', borderRadius: '9999px',
-                fontSize: '0.75rem', fontWeight: 600
-              }}>
-                {pTasks.length} tasks
-              </span>
-            </div>
-            
-            <div style={{ 
-              background: `${colors.border}10`, 
-              border: `1px solid ${colors.border}30`,
-              borderRadius: '16px', padding: '1rem',
-              minHeight: '80px'
-            }}>
+          <CollapsibleSection
+            key={p}
+            title={`${p.toUpperCase()} Energy`}
+            count={pTasks.length}
+            right={<Zap size={16} style={{ color: colors.border }} />}
+          >
+            <div className="energy-band" style={{ borderColor: colors.border }}>
               {pTasks.length === 0 ? (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#52525B', fontSize: '0.875rem' }}>
-                  No {priority} priority tasks
-                </div>
+                <div className="empty">No {p} tasks</div>
               ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {pTasks.map(task => (
-                    <div 
-                      key={task.id}
-                      style={{ 
-                        background: '#18181B', border: `1px solid ${colors.border}40`,
-                        borderRadius: '8px', padding: '0.5rem 0.75rem',
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        maxWidth: '300px'
-                      }}
-                    >
-                      <input 
-                        type="checkbox" 
-                        checked={task.status === "done"}
-                        onChange={() => {}}
-                        style={{ accentColor: colors.border, width: '14px', height: '14px' }}
-                      />
-                      <span style={{ color: 'white', fontSize: '0.875rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {task.title}
-                      </span>
+                <div className="energy-list">
+                  {pTasks.map((task) => (
+                    <div key={task.id} className="energy-chip">
+                      <input type="checkbox" readOnly checked={task.status === "done"} />
+                      <span>{task.title}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
+          </CollapsibleSection>
         );
       })}
     </div>
   );
 }
 
-// ============================================================================
-// View: Live (Activity Feed)
-// ============================================================================
-function LiveView({ agents, tasks }: { agents: Agent[]; tasks: Task[] }) {
-  // Combine agent activities and task updates into a feed
+function LiveView({ agents, tasks, derived }: { agents: Agent[]; tasks: Task[]; derived: boolean }) {
   const feed = [
-    ...agents.filter(a => a.lastActivity).map(a => ({
-      type: 'agent' as const,
-      id: a.id,
-      title: `${a.name} ${a.status === 'running' ? 'is working' : a.status}`,
-      description: a.currentTask || 'No active task',
-      timestamp: a.lastActivity!,
-      color: a.status === 'running' ? '#22C55E' : '#71717A'
-    })),
-    ...tasks.map(t => ({
-      type: 'task' as const,
+    ...agents
+      .filter((a) => a.lastActivity)
+      .map((a) => ({
+        id: a.id,
+        type: "agent" as const,
+        title: `${a.name} ${a.status}`,
+        description: a.currentTask || "No active task",
+        timestamp: a.lastActivity!,
+        color: a.status === "running" ? "#22C55E" : "#71717A",
+      })),
+    ...tasks.map((t) => ({
       id: t.id,
+      type: "task" as const,
       title: t.title,
       description: `Status: ${t.status}`,
       timestamp: t.updatedAt,
-      color: STATUS_COLORS[t.status as keyof typeof STATUS_COLORS] || '#71717A'
-    }))
-  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 20);
+      color: STATUS_COLORS[t.status] || "#71717A",
+    })),
+  ]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 20);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-      {feed.map((item, idx) => (
-        <div 
-          key={`${item.type}-${item.id}`}
-          style={{ 
-            display: 'flex', alignItems: 'flex-start', gap: '1rem',
-            padding: '1rem', background: '#18181B', borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.03)',
-            animation: idx === 0 ? 'pulse 2s infinite' : 'none'
-          }}
-        >
-          <div style={{ 
-            width: '10px', height: '10px', borderRadius: '50%',
-            background: item.color,
-            marginTop: '6px',
-            boxShadow: idx === 0 ? `0 0 8px ${item.color}` : 'none'
-          }} />
-          <div style={{ flex: 1 }}>
-            <h4 style={{ color: 'white', fontWeight: 500, fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-              {item.title}
-            </h4>
-            <p style={{ color: '#71717A', fontSize: '0.75rem' }}>{item.description}</p>
+    <CollapsibleSection
+      title={derived ? "Live Feed (Derived)" : "Live Feed"}
+      count={feed.length}
+      right={derived ? <span className="badge-outline">Derived</span> : undefined}
+    >
+      <div className="live-feed">
+        {feed.map((item) => (
+          <div key={`${item.type}-${item.id}`} className="live-item">
+            <span className="live-dot" style={{ background: item.color }} />
+            <div className="live-content">
+              <div className="live-title">{item.title}</div>
+              <div className="live-desc">{item.description}</div>
+            </div>
+            <span className="muted">{formatTime(item.timestamp)}</span>
           </div>
-          <span style={{ color: '#52525B', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-            {formatTime(item.timestamp)}
-          </span>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </CollapsibleSection>
   );
 }
 
-// ============================================================================
-// Main Page Component
-// ============================================================================
 export default function Home() {
-  const [view, setView] = useState<string>("stack");
+  const [view, setView] = useState("stack");
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [currentTask, setCurrentTask] = useState<string>("");
+  const [currentTask, setCurrentTask] = useState("");
   const [isOnline, setIsOnline] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"focused" | "dashboard">("focused");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Fetch data
   useEffect(() => {
     const fetchAgents = async () => {
       try {
         const res = await fetch("/api/tracker/agents");
         const data = await res.json();
         setAgents(Array.isArray(data) ? data : []);
-      } catch (err) { console.error("Failed to fetch agents:", err); }
+      } catch (err) {
+        console.error("Failed to fetch agents:", err);
+      }
     };
     const fetchState = async () => {
       try {
@@ -399,310 +306,301 @@ export default function Home() {
         const data = await res.json();
         setCurrentTask(data.currentActivity || data.currentTask || "");
         setIsOnline(data.atlasOnline || data._connected || false);
-      } catch (err) { console.error("Failed to fetch state:", err); }
+      } catch (err) {
+        console.error("Failed to fetch state:", err);
+      }
     };
     const fetchTasks = async () => {
       try {
         const res = await fetch("/api/tracker/tasks");
         const data = await res.json();
         setTasks(Array.isArray(data) ? data : []);
-      } catch (err) { console.error("Failed to fetch tasks:", err); }
+      } catch (err) {
+        console.error("Failed to fetch tasks:", err);
+      }
     };
 
-    fetchAgents(); fetchState(); fetchTasks();
-    const interval = setInterval(() => { fetchAgents(); fetchState(); fetchTasks(); }, 5000);
+    fetchAgents();
+    fetchState();
+    fetchTasks();
+    const interval = setInterval(() => {
+      fetchAgents();
+      fetchState();
+      fetchTasks();
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
+  const derivedAgents = useMemo(() => {
+    const map = new Map<string, Agent>();
+    tasks.forEach((t) => {
+      if (!t.agentCodeName) return;
+      if (!map.has(t.agentCodeName)) {
+        map.set(t.agentCodeName, {
+          id: t.agentCodeName,
+          name: t.agentCodeName,
+          status: "assigned",
+          currentTask: t.title,
+          lastActivity: t.updatedAt,
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [tasks]);
+
+  const useDerivedAgents = agents.length === 0 && derivedAgents.length > 0;
+
   const navItems = [
     { id: "stack", icon: Layers, label: "Objectives", desc: "Tasks by status" },
-    { id: "lens", icon: Bot, label: "Agents", desc: "Active agents" },
+    { id: "lens", icon: Bot, label: "Agents", desc: "Active or assigned" },
     { id: "energy", icon: Zap, label: "Energy", desc: "By priority" },
     { id: "live", icon: Activity, label: "Live", desc: "Activity feed" },
   ];
 
   const renderView = () => {
     switch (view) {
-      case "stack": return <ObjectivesView tasks={tasks} />;
-      case "lens": return <AgentsView agents={agents} />;
-      case "energy": return <EnergyView tasks={tasks} />;
-      case "live": return <LiveView agents={agents} tasks={tasks} />;
-      default: return <ObjectivesView tasks={tasks} />;
+      case "stack":
+        return <ObjectivesView tasks={tasks} />;
+      case "lens":
+        return (
+          <AgentsView agents={useDerivedAgents ? derivedAgents : agents} derived={useDerivedAgents} />
+        );
+      case "energy":
+        return <EnergyView tasks={tasks} />;
+      case "live":
+        return (
+          <LiveView agents={useDerivedAgents ? derivedAgents : agents} tasks={tasks} derived={useDerivedAgents} />
+        );
+      default:
+        return <ObjectivesView tasks={tasks} />;
     }
   };
 
-  const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
-    <aside style={{ 
-      position: mobile ? 'fixed' : 'fixed',
-      top: 0, left: 0, bottom: 0,
-      width: mobile ? '280px' : '260px',
-      background: '#18181B',
-      borderRight: '1px solid rgba(255,255,255,0.05)',
-      padding: '1.5rem',
-      display: 'flex', flexDirection: 'column',
-      zIndex: mobile ? 100 : 50,
-      transform: mobile && !sidebarOpen ? 'translateX(-100%)' : 'translateX(0)',
-      transition: 'transform 0.3s ease',
-    }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-        <div style={{ 
-          width: '44px', height: '44px', borderRadius: '12px', 
-          background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(249,115,22,0.3)'
-        }}>
-          <Activity size={24} style={{ color: 'white' }} />
+  return (
+    <div className="app">
+      <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <div className="sidebar-header">
+          <div className="logo">
+            <Activity size={20} />
+          </div>
+          {!sidebarCollapsed && (
+            <div>
+              <div className="title">Atlas</div>
+              <div className="subtitle">Mission Control</div>
+            </div>
+          )}
+          <button
+            className="collapse-btn"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label="Collapse sidebar"
+          >
+            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
-        <div>
-          <h1 style={{ fontWeight: 700, color: 'white', fontSize: '1rem' }}>Atlas Focus</h1>
-          <p style={{ fontSize: '0.7rem', color: '#71717A' }}>Mission Control</p>
-        </div>
-      </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1 }}>
-        {navItems.map(item => {
+        <nav className="nav">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = view === item.id;
+            return (
+              <button
+                key={item.id}
+                className={`nav-item ${active ? "active" : ""}`}
+                onClick={() => setView(item.id)}
+              >
+                <Icon size={18} />
+                {!sidebarCollapsed && (
+                  <div>
+                    <div className="nav-title">{item.label}</div>
+                    <div className="nav-desc">{item.desc}</div>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="status">
+          <div className={`status-dot ${isOnline ? "online" : "offline"}`} />
+          {!sidebarCollapsed && (
+            <div>
+              <div className="status-title">Atlas {isOnline ? "Online" : "Offline"}</div>
+              <div className="status-desc">{currentTask || "Idle"}</div>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Mobile header */}
+      <header className="mobile-header">
+        <button onClick={() => setSidebarOpen(true)} className="icon-btn">
+          <Menu size={20} />
+        </button>
+        <span>Atlas</span>
+        <span className={`status-dot ${isOnline ? "online" : "offline"}`} />
+      </header>
+
+      {/* Mobile sidebar */}
+      <aside className={`mobile-sidebar ${sidebarOpen ? "open" : ""}`}>
+        <div className="mobile-top">
+          <span>Atlas</span>
+          <button onClick={() => setSidebarOpen(false)} className="icon-btn">
+            <X size={18} />
+          </button>
+        </div>
+        <nav className="nav">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = view === item.id;
+            return (
+              <button
+                key={item.id}
+                className={`nav-item ${active ? "active" : ""}`}
+                onClick={() => {
+                  setView(item.id);
+                  setSidebarOpen(false);
+                }}
+              >
+                <Icon size={18} />
+                <div>
+                  <div className="nav-title">{item.label}</div>
+                  <div className="nav-desc">{item.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+      {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)} />}
+
+      <main className={`main ${sidebarCollapsed ? "wide" : ""}`}>
+        {currentTask && (
+          <div className="banner">
+            <div className="banner-dot" />
+            <div>
+              <div className="banner-label">Atlas Activity</div>
+              <div className="banner-text">{currentTask}</div>
+            </div>
+          </div>
+        )}
+        <div className="view-header">
+          <h2>{navItems.find((i) => i.id === view)?.label}</h2>
+          <p>{navItems.find((i) => i.id === view)?.desc}</p>
+        </div>
+        {renderView()}
+      </main>
+
+      <nav className="mobile-nav">
+        {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = view === item.id;
+          const active = view === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => { setView(item.id); if (mobile) setSidebarOpen(false); }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.875rem 1rem', borderRadius: '12px',
-                background: isActive ? 'rgba(249,115,22,0.15)' : 'transparent',
-                border: 'none', cursor: 'pointer', marginBottom: '0.5rem',
-                textAlign: 'left' as const, transition: 'all 0.2s'
-              }}
+              className={`mobile-item ${active ? "active" : ""}`}
+              onClick={() => setView(item.id)}
             >
-              <Icon 
-                size={20} 
-                style={{ 
-                  color: isActive ? '#F97316' : '#71717A',
-                }} 
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  color: isActive ? '#F97316' : 'white', 
-                  fontWeight: isActive ? 600 : 500, 
-                  fontSize: '0.875rem' 
-                }}>
-                  {item.label}
-                </div>
-                <div style={{ color: '#52525B', fontSize: '0.7rem' }}>{item.desc}</div>
-              </div>
-              {isActive && <ChevronRight size={16} style={{ color: '#F97316', transform: 'rotate(-90deg)' }} />}
+              <Icon size={18} />
+              <span>{item.label}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* Atlas Status */}
-      <div style={{ 
-        background: 'rgba(255,255,255,0.02)', borderRadius: '14px', 
-        padding: '1rem', marginBottom: '1rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <span style={{ 
-            width: '10px', height: '10px', borderRadius: '50%',
-            background: isOnline ? '#22C55E' : '#EF4444',
-            boxShadow: isOnline ? '0 0 12px #22C55E' : 'none',
-            animation: isOnline ? 'pulse 2s infinite' : 'none'
-          }} />
-          <span style={{ 
-            color: isOnline ? '#22C55E' : '#EF4444', 
-            fontWeight: 600, fontSize: '0.8rem' 
-          }}>
-            Atlas {isOnline ? 'Online' : 'Offline'}
-          </span>
-        </div>
-        {currentTask && (
-          <p style={{ color: '#A1A1AA', fontSize: '0.75rem', lineHeight: 1.5 }}>
-            {currentTask}
-          </p>
-        )}
-      </div>
-
-      {/* View Toggle */}
-      <button
-        onClick={() => setViewMode(viewMode === "focused" ? "dashboard" : "focused")}
-        style={{
-          padding: '0.75rem 1rem',
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '10px', color: '#A1A1AA', fontSize: '0.75rem',
-          cursor: 'pointer', width: '100%', transition: 'all 0.2s'
-        }}
-      >
-        Switch to {viewMode === "focused" ? "Dashboard" : "Focus"} Mode
-      </button>
-    </aside>
-  );
-
-  // Dashboard mode (simplified)
-  if (viewMode === "dashboard") {
-    return (
-      <div className="min-h-screen bg-[#09090B]">
-        <header className="fixed top-0 left-0 right-0 h-16 bg-[#18181B]/95 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 z-50">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#F97316] to-[#EA580C] flex items-center justify-center">
-              <Activity size={20} className="text-white" />
-            </div>
-            <div>
-              <h1 className="font-semibold text-white text-base">Atlas Cockpit</h1>
-            </div>
-          </div>
-          <button
-            onClick={() => setViewMode("focused")}
-            style={{ padding: '0.5rem 1rem', background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '8px', color: '#F97316', cursor: 'pointer' }}
-          >
-            ← Focus Mode
-          </button>
-        </header>
-        <main className="pt-20 pb-8 px-4 md:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-8 p-6 bg-gradient-to-r from-[#F97316]/10 to-[#EA580C]/5 border border-[#F97316]/20 rounded-2xl">
-              <h2 className="text-2xl font-bold text-white mb-2">{isOnline ? "Atlas is Online" : "Atlas is Offline"}</h2>
-              <p className="text-[#A1A1AA]">{currentTask || "Ready"}</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-white/5 rounded-2xl p-6">
-                <h3 className="font-semibold text-white text-lg mb-2">Tasks</h3>
-                <p className="text-sm text-[#A1A1AA]">{tasks.length} active</p>
-                <button onClick={() => setView("stack")} className="mt-4 px-4 py-2 bg-[#F97316] text-white rounded-lg text-sm">View</button>
-              </div>
-              <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-white/5 rounded-2xl p-6">
-                <h3 className="font-semibold text-white text-lg mb-2">Agents</h3>
-                <p className="text-sm text-[#A1A1AA]">{agents.length} active</p>
-                <button onClick={() => setView("lens")} className="mt-4 px-4 py-2 bg-[#3B82F6] text-white rounded-lg text-sm">View</button>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#09090B' }}>
-      {/* Desktop Sidebar */}
-      <Sidebar />
-      
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          onClick={() => setSidebarOpen(false)}
-          style={{ 
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', 
-            zIndex: 90, display: 'none'
-          }} 
-        />
-      )}
-      <Sidebar mobile />
-
-      {/* Mobile Header */}
-      <header style={{ 
-        display: 'none',
-        position: 'fixed', top: 0, left: 0, right: 0,
-        height: '60px', background: 'rgba(24,24,27,0.95)', backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        padding: '0 1rem', zIndex: 80, alignItems: 'center', justifyContent: 'space-between'
-      }}>
-        <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-          <Menu size={24} style={{ color: 'white' }} />
-        </button>
-        <span style={{ color: 'white', fontWeight: 600 }}>Atlas Focus</span>
-        <span style={{ 
-          width: '10px', height: '10px', borderRadius: '50%',
-          background: isOnline ? '#22C55E' : '#EF4444',
-          boxShadow: isOnline ? '0 0 8px #22C55E' : 'none'
-        }} />
-      </header>
-
-      {/* Main Content */}
-      <main style={{ 
-        marginLeft: '260px', 
-        minHeight: '100vh',
-        padding: '2rem',
-        paddingBottom: '100px' // Space for mobile nav
-      }}>
-        {/* Activity Banner */}
-        {currentTask && (
-          <div style={{ 
-            background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.05) 100%)',
-            border: '1px solid rgba(249,115,22,0.25)',
-            borderRadius: '14px', padding: '1rem 1.5rem',
-            marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem'
-          }}>
-            <div style={{ 
-              width: '8px', height: '8px', borderRadius: '50%', 
-              background: '#F97316', animation: 'pulse 2s infinite'
-            }} />
-            <div>
-              <span style={{ color: '#F97316', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Atlas Activity</span>
-              <p style={{ color: 'white', fontSize: '0.9rem', marginTop: '0.25rem' }}>{currentTask}</p>
-            </div>
-          </div>
-        )}
-
-        {/* View Title */}
-        <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>
-            {navItems.find(i => i.id === view)?.label}
-          </h2>
-          <p style={{ color: '#71717A', fontSize: '0.875rem' }}>
-            {navItems.find(i => i.id === view)?.desc}
-          </p>
-        </div>
-
-        {/* View Content */}
-        {renderView()}
-      </main>
-
-      {/* Mobile Bottom Nav */}
-      <nav style={{ 
-        display: 'none',
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'rgba(24,24,27,0.95)', backdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
-        padding: '0.75rem 1rem 1.5rem', zIndex: 80
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-          {navItems.map(item => {
-            const Icon = item.icon;
-            const isActive = view === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setView(item.id)}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  gap: '0.25rem', background: 'none', border: 'none', cursor: 'pointer',
-                  color: isActive ? '#F97316' : '#71717A'
-                }}
-              >
-                <Icon size={22} />
-                <span style={{ fontSize: '0.6rem' }}>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Responsive styles */}
       <style>{`
+        .app { min-height: 100vh; background: #09090B; }
+        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #18181B; border-right: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; display: flex; flex-direction: column; z-index: 40; }
+        .sidebar.collapsed { width: 72px; padding: 1rem 0.5rem; }
+        .sidebar-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+        .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg,#F97316,#EA580C); display: flex; align-items: center; justify-content: center; color: white; }
+        .title { color: white; font-weight: 700; font-size: 0.9rem; }
+        .subtitle { color: #71717A; font-size: 0.7rem; }
+        .collapse-btn { margin-left: auto; background: rgba(255,255,255,0.08); border: 0; color: #A1A1AA; border-radius: 8px; padding: 0.25rem; cursor: pointer; }
+        .nav { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.9rem; border-radius: 12px; border: 0; background: transparent; color: white; cursor: pointer; text-align: left; }
+        .nav-item.active { background: rgba(249,115,22,0.15); color: #F97316; }
+        .nav-title { font-weight: 600; font-size: 0.85rem; }
+        .nav-desc { color: #71717A; font-size: 0.7rem; }
+        .status { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 12px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .status-dot.online { background: #22C55E; box-shadow: 0 0 10px #22C55E; }
+        .status-dot.offline { background: #EF4444; }
+        .status-title { color: white; font-weight: 600; font-size: 0.8rem; }
+        .status-desc { color: #71717A; font-size: 0.7rem; }
+
+        .main { margin-left: 260px; padding: 2rem; min-height: 100vh; }
+        .main.wide { margin-left: 72px; }
+        .banner { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: 12px; background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.25); margin-bottom: 1.5rem; }
+        .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: #F97316; animation: pulse 2s infinite; }
+        .banner-label { color: #F97316; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
+        .banner-text { color: white; font-size: 0.9rem; }
+        .view-header h2 { color: white; font-size: 1.5rem; margin-bottom: 0.25rem; }
+        .view-header p { color: #71717A; font-size: 0.85rem; }
+
+        .section { margin-bottom: 1rem; }
+        .section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; color: white; cursor: pointer; }
+        .section-title { display: flex; align-items: center; gap: 0.5rem; }
+        .section-dot { width: 6px; height: 6px; background: #F97316; border-radius: 50%; }
+        .section-count { margin-left: 0.5rem; background: rgba(255,255,255,0.1); padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; color: #A1A1AA; }
+        .section-right { display: flex; align-items: center; gap: 0.5rem; color: #A1A1AA; }
+        .section-body { padding: 0.75rem 0.25rem; }
+
+        .kanban { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+        .task-col { display: flex; flex-direction: column; gap: 0.75rem; }
+        .task-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 0.9rem; }
+        .task-card h4 { color: white; font-size: 0.85rem; font-weight: 600; }
+        .task-card p { color: #71717A; font-size: 0.75rem; margin-top: 0.4rem; }
+        .task-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+        .badge { font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 6px; text-transform: uppercase; font-weight: 700; }
+        .task-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+        .agent-tag { font-size: 0.6rem; background: rgba(249,115,22,0.15); color: #F97316; padding: 0.1rem 0.4rem; border-radius: 4px; }
+        .muted { color: #52525B; font-size: 0.7rem; }
+        .empty { padding: 1rem; text-align: center; color: #52525B; font-size: 0.8rem; }
+
+        .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+        .agent-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; padding: 1rem; }
+        .agent-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .agent-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(59,130,246,0.2); display: flex; align-items: center; justify-content: center; color: #93C5FD; }
+        .agent-name { color: white; font-weight: 600; }
+        .agent-status { font-size: 0.7rem; color: #A1A1AA; display: flex; align-items: center; gap: 0.4rem; }
+        .agent-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #71717A; }
+        .agent-status.running .dot { background: #22C55E; box-shadow: 0 0 8px #22C55E; }
+        .agent-task { display: flex; align-items: center; gap: 0.4rem; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2); padding: 0.6rem; border-radius: 8px; color: white; font-size: 0.8rem; }
+        .agent-stats { display: flex; gap: 0.5rem; margin-top: 0.6rem; color: #71717A; font-size: 0.7rem; }
+        .agent-stats div { display: flex; align-items: center; gap: 0.3rem; }
+
+        .energy { display: flex; flex-direction: column; gap: 0.75rem; }
+        .energy-band { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.8rem; }
+        .energy-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .energy-chip { display: flex; align-items: center; gap: 0.4rem; background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.4rem 0.6rem; color: white; font-size: 0.75rem; }
+
+        .live-feed { display: flex; flex-direction: column; gap: 0.6rem; }
+        .live-item { display: flex; align-items: flex-start; gap: 0.6rem; background: #18181B; border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 0.75rem; }
+        .live-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 0.35rem; }
+        .live-title { color: white; font-size: 0.85rem; font-weight: 600; }
+        .live-desc { color: #71717A; font-size: 0.75rem; }
+
+        .badge-outline { border: 1px solid rgba(255,255,255,0.2); color: #A1A1AA; padding: 0.1rem 0.4rem; border-radius: 6px; font-size: 0.65rem; }
+        .pill { width: 8px; height: 8px; border-radius: 50%; border: 2px solid; }
+
+        .mobile-header, .mobile-nav, .mobile-sidebar, .overlay { display: none; }
+        .icon-btn { background: rgba(255,255,255,0.05); border: 0; border-radius: 8px; padding: 0.35rem; color: white; }
+
         @media (max-width: 768px) {
-          main { margin-left: 0 !important; padding: 1rem !important; padding-bottom: 120px !important; }
-          aside.desktop { display: none !important; }
-          header.mobile { display: flex !important; }
-          nav.mobile { display: block !important; }
-          .mobile-overlay { display: block !important; }
+          .sidebar { display: none; }
+          .main { margin-left: 0; padding: 1rem; padding-bottom: 6rem; }
+          .mobile-header { display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px; align-items: center; justify-content: space-between; padding: 0 1rem; background: rgba(24,24,27,0.95); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 60; }
+          .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(24,24,27,0.95); border-top: 1px solid rgba(255,255,255,0.05); padding: 0.6rem 0.8rem 1rem; justify-content: space-around; z-index: 60; }
+          .mobile-item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; color: #71717A; background: none; border: 0; }
+          .mobile-item.active { color: #F97316; }
+          .mobile-sidebar { display: block; position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #18181B; padding: 1rem; transform: translateX(-100%); transition: transform 0.2s ease; z-index: 70; }
+          .mobile-sidebar.open { transform: translateX(0); }
+          .mobile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; color: white; }
+          .overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 65; }
+          .view-header { margin-top: 3.5rem; }
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
       `}</style>
     </div>
   );

@@ -1,51 +1,60 @@
-# Active Task: UI Rewrite - Responsive + Visual Differentiation
+# Active Task: UI Consistency + Beads↔KV Continuity Fixes
 
 **Date:** 2026-02-02
 **Status:** ✅ COMPLETED
 **Priority:** High
 
-## Changes Made
+## Summary
 
-### 1. Mobile Responsive Layout ✅
-- Desktop sidebar (260px) with `marginLeft` offset
-- Mobile: Hamburger menu + bottom nav
-- Breakpoint at 768px
+Addressed issues raised:
+- Sidebar menu wouldn’t close
+- Statuses not matching Beads
+- No auto-sync after Beads changes
+- Agents assigned in tasks not appearing in Agents view
+- Non‑focus mode redundant
+- Sections needed to be collapsible
+- Live view unclear if derived
 
-### 2. Visual Differentiation Between Views ✅
+## Fixes Implemented
 
-| View | Content | Visual Distinction |
-|------|---------|-------------------|
-| **Objectives** | 4-column Kanban (Todo → Done) | Status-colored columns + task cards |
-| **Agents** | Rich cards with glow effect | Status colors, current task, stats |
-| **Energy** | Priority bands (urgent→low) | Color intensity, glow effects |
-| **Live** | Activity feed with timestamps | Pulsing dots, chronological list |
+### ✅ Sidebar Closing
+- Added **collapse/expand** button for desktop sidebar
+- Added **mobile overlay click-to-close**
+- Added **close button** in mobile sidebar
 
-### 3. Rich Task Organization ✅
-- **Objectives View**: Grouped by status columns (Todo/In Progress/Review/Done)
-- **Energy View**: Priority bands with visual intensity
-- Task cards show: title, description, agent, timestamp, priority badge
+### ✅ Status Accuracy + Sync Continuity
+- Sync now fetches **all Beads issues** and filters only `closed` (no more closed tasks in TODO)
+- Added **bd:watch** script to auto-sync whenever `.beads/issues.jsonl` changes
 
-### 4. Rich Agent Cards ✅
-- Name + status with glow effect
-- Current task highlighted
-- Last activity timestamp
-- Stats placeholder
+### ✅ Agents View (Derived Fallback)
+- If `/api/tracker/agents` returns empty, show **derived agents** from task `agentCodeName`
+- Label views clearly as **Derived**
 
-### 5. Live Activity Feed ✅
-- Combined agent + task activity
-- Pulsing status dots
-- Relative timestamps ("5m ago")
+### ✅ Removed Dashboard Mode
+- Only **main mode** remains (focused layout)
+
+### ✅ Collapsible Sections
+- Objectives columns, Agents, Energy, Live all collapsible
+
+### ✅ Live View Clarity
+- Labeled as **Derived** if no agent telemetry
 
 ## Files Modified
-- `app/page.tsx` - Complete rewrite (~800 lines)
+- `app/page.tsx` — main UI rewrite with collapsible sections, sidebar controls, derived agent logic
+- `scripts/sync-beads-to-kv.ts` — sync now includes all non‑closed beads
+- `scripts/beads-kv-watch.ts` — watch mode for auto‑sync
+- `package.json` — added `bd:watch`
 
-## Features Added
-- Mobile hamburger menu
-- Mobile bottom navigation
-- View toggle (Focus/Dashboard)
-- Status glow animations
-- Responsive breakpoints
+## Usage
+
+```bash
+# Continuous sync while working
+npm run bd:watch
+
+# One-off sync
+npm run bd:sync
+```
 
 ---
 
-*Previous issues resolved: mobile responsiveness, visual differentiation, task organization.*
+**Result:** UI now stays in sync with Beads/KV, sections are collapsible, sidebar closes properly, and agents view reflects assignments even without live telemetry.

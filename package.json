@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "bd:sync": "npx tsx scripts/sync-beads-to-kv.ts",
+    "bd:watch": "npx tsx scripts/beads-kv-watch.ts",
     "bdx": "./scripts/bdx"
   },
   "dependencies": {

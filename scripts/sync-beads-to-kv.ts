@@ -82,15 +82,18 @@ function fetchBeadsIssues(): BeadsIssue[] {
   console.log('📦 Fetching issues from Beads...');
   
   try {
-    const output = execSync('bd list --status open --json', {
+    const output = execSync('bd list --json', {
       cwd: process.cwd(),
       encoding: 'utf-8',
       timeout: 30000,
     });
     
     const issues = JSON.parse(output);
-    console.log(`   Found ${issues.length} open issues in Beads`);
-    return Array.isArray(issues) ? issues : [];
+    const openIssues = Array.isArray(issues)
+      ? issues.filter((i: BeadsIssue) => i.status !== 'closed')
+      : [];
+    console.log(`   Found ${openIssues.length} active issues in Beads`);
+    return openIssues;
   } catch (error) {
     console.error('❌ Failed to fetch from Beads:', error);
     return [];
