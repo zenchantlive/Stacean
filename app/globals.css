@@ -249,3 +249,235 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 }
+
+/* ==========================================================================
+   UNIFIED TABBED DASHBOARD
+   ========================================================================== */
+
+.app {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.app-tabs {
+  display: flex;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  min-height: var(--tap-min);
+}
+
+.tab:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.tab.active {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.tab-count {
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-elevated);
+}
+
+.tab.active .tab-count {
+  background: var(--color-accent);
+  color: white;
+}
+
+.app-content {
+  padding: var(--space-md);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Tasks View */
+.tasks-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.quick-add {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.quick-add input {
+  flex: 1;
+  height: var(--input-height);
+  padding: 0 var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+}
+
+.quick-add input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.quick-add button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--input-height);
+  padding: 0 var(--space-md);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  cursor: pointer;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.task-item:hover {
+  border-color: var(--color-border-strong);
+}
+
+.task-checkbox input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-sage);
+}
+
+.task-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  cursor: pointer;
+}
+
+.task-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+}
+
+.task-project {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.task-arrow {
+  color: var(--color-text-muted);
+}
+
+/* Projects View */
+.projects-view h3,
+.notes-view h3,
+.ledger-view h3 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.view-description {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.project-card {
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.project-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.project-name {
+  flex: 1;
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+}
+
+.project-status {
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  text-transform: capitalize;
+}
+
+.project-status.active {
+  background: var(--color-sage-muted);
+  color: var(--color-sage);
+}
+
+.project-status.building {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.project-tasks {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-xl);
+}
