@@ -417,3 +417,119 @@
     padding-top: 88px;
   }
 }
+
+/* ==========================================================================
+   VIEW TOGGLE BUTTONS
+   ========================================================================== */
+
+.view-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #A1A1AA;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FAFAFA;
+}
+
+.view-toggle-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #71717A;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #A1A1AA;
+}
+
+.toggle-btn.active {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.3);
+  color: #F97316;
+}
+
+.nav-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #52525B;
+  margin-bottom: 8px;
+  padding: 0 12px;
+}
+
+/* ==========================================================================
+   WIDGETS GRID (Full Mode)
+   ========================================================================== */
+
+.widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.widget {
+  background: rgba(39, 39, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 24px;
+  min-height: 160px;
+}
+
+.widget-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #FAFAFA;
+  margin: 0 0 12px 0;
+}
+
+.widget-empty {
+  font-size: 13px;
+  color: #71717A;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .widgets-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  
+  .widget {
+    padding: 28px;
+    border-radius: 20px;
+    min-height: 180px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .widgets-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
