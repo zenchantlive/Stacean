@@ -11,8 +11,46 @@ interface Agent {
   currentTask?: string;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority: string;
+  assignedTo?: string;
+  createdAt: number | string;
+  updatedAt: number | string;
+}
+
 // Simple inline Task Display (since TaskWidget has broken internal nav)
 function TaskDisplay({ view }: { view: string }) {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch("/api/tracker/tasks");
+        const data = await res.json();
+        setTasks(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch tasks:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+    const interval = setInterval(fetchTasks, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 3;
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 3;
+    return aPriority - bPriority;
+  });
+
   return (
     <div className="task-display">
       <div className="task-header">
@@ -21,12 +59,43 @@ function TaskDisplay({ view }: { view: string }) {
           {view === "lens" && "Agent Lens"}
           {view === "energy" && "Energy Map"}
         </h2>
+        <span className="task-count">{sortedTasks.length}</span>
       </div>
-      <div className="task-empty">
-        <CheckSquare size={48} className="text-[#52525B] mb-4" />
-        <p className="text-[#A1A1AA]">No tasks yet</p>
-        <p className="text-[#71717A] text-sm">Create your first objective to get started</p>
-      </div>
+      {loading ? (
+        <div className="task-loading">
+          <p className="text-[#A1A1AA]">Loading...</p>
+        </div>
+      ) : sortedTasks.length === 0 ? (
+        <div className="task-empty">
+          <CheckSquare size={48} className="text-[#52525B] mb-4" />
+          <p className="text-[#A1A1AA]">No tasks yet</p>
+          <p className="text-[#71717A] text-sm">Create your first objective to get started</p>
+        </div>
+      ) : (
+        <div className="task-list">
+          {sortedTasks.map(task => (
+            <div key={task.id} className={`task-card priority-${task.priority}`}>
+              <div className="task-main">
+                <input
+                  type="checkbox"
+                  checked={task.status === "done"}
+                  onChange={() => {/* TODO: Toggle task status */}}
+                  className="task-checkbox"
+                />
+                <div className="task-content">
+                  <h3 className="task-title">{task.title}</h3>
+                  {task.description && (
+                    <p className="task-description">{task.description}</p>
+                  )}
+                </div>
+                <span className={`task-badge priority-${task.priority}`}>
+                  {task.priority}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -147,6 +147,129 @@
   padding: 48px 24px;
 }
 
+.task-count {
+  font-size: 13px;
+  color: #71717A;
+  font-weight: 400;
+}
+
+.task-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-card {
+  background: rgba(39, 39, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.task-card:hover {
+  background: rgba(39, 39, 42, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.task-card.priority-urgent {
+  border-left: 3px solid #EF4444;
+}
+
+.task-card.priority-high {
+  border-left: 3px solid #F97316;
+}
+
+.task-card.priority-medium {
+  border-left: 3px solid #EAB308;
+}
+
+.task-card.priority-low {
+  border-left: 3px solid #10B981;
+}
+
+.task-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid #52525B;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.task-checkbox:checked {
+  background: #F97316;
+  border-color: #F97316;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #FAFAFA;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+}
+
+.task-description {
+  font-size: 13px;
+  color: #A1A1AA;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.task-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.task-badge.priority-urgent {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+}
+
+.task-badge.priority-high {
+  background: rgba(249, 115, 22, 0.15);
+  color: #F97316;
+}
+
+.task-badge.priority-medium {
+  background: rgba(234, 179, 8, 0.15);
+  color: #EAB308;
+}
+
+.task-badge.priority-low {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+}
+
+.task-badge.status-done {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+}
+
 /* Agents Grid */
 .agents-grid {
   display: flex;
