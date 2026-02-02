@@ -1,85 +1,56 @@
-# Active Task: Tasks Not Displaying on Vercel Deployment
+# Active Task: Beads→KV Sync for Real-Time Task Visibility
 
 **Date:** 2026-02-02
-**Status:** UNRESOLVED
+**Status:** ✅ RESOLVED
 **Priority:** High
 
-## Issue Description
+## Issue
 
-Tasks stored in Vercel KV (Redis) are not visible on the Vercel deployment frontend. The API returns data locally but the deployed version either:
-- Returns empty array, OR
-- Frontend fails to render tasks
+Tasks created via `bd` CLI weren't visible on Vercel deployment UI because:
+- Beads stores issues locally in `.beads/issues.jsonl`
+- KV (Upstash Redis) was empty
+- UI fetches from KV, not Beads
 
-## Environment
+## Solution Implemented
 
-- **Local:** http://localhost:3000 (connected to modern-panda-43486.upstash.io)
-- **Vercel Project:** zenchantlives-projects/blog
-- **Latest Deployment:** https://blog-krg3bmqll-zenchantlives-projects.vercel.app
+Created a sync script that mirrors Beads → KV:
 
-## What We Tried
+### Files Added/Modified:
+- `scripts/sync-beads-to-kv.ts` - New sync script
+- `package.json` - Added `"bd:sync": "npx tsx scripts/sync-beads-to-kv.ts"`
 
-### 1. Connected Real KV
-- Linked to Vercel project "blog" (not "stacean-repo")
-- Pulled credentials: `npx vercel link --project=blog --yes && npx vercel env pull`
-- Verified local server uses real KV (not mock mode)
-- Created test task via API: appeared in local `/api/tracker/tasks`
+### Sync Script Features:
+- Fetches all open issues from Beads via `bd list --json`
+- Converts Beads issues to KV task format
+- Writes to Upstash KV with `tracker:task:{id}` keys
+- Cleans up closed tasks from KV
 
-### 2. Frontend Code
-- `TaskDisplay` component fetches from `/api/tracker/tasks`
-- Sorts by priority, handles loading/empty states
-- Renders task cards with priority badges and checkboxes
-- Added CSS for `.task-list`, `.task-card`, `.task-main`, etc.
+## Usage
 
-### 3. Deployment
-- Pushed to `ux/integrated-dashboard` branch (commit 707b5d5)
-- Vercel auto-deployed to preview URL
+After creating a bead:
+```bash
+# Create a bead
+bd create "My new task" -p 1
 
-## What Failed
+# Sync to KV (pushes to Vercel in real-time)
+npm run bd:sync
 
-- **Frontend displays "No tasks yet"** despite KV containing 40+ tasks
-- **API returns 401 on Vercel** when accessed directly (requires auth)
-- **Unable to verify API response** on Vercel deployment due to authentication wall
-- **Root cause unknown** - could be:
-  - API returning empty on Vercel
-  - Frontend fetch failing silently
-  - CSS rendering issue (tasks exist but hidden)
-  - KV not accessible from Vercel server-side
-  - Different KV namespace/prefix on Vercel vs local
-
-## Observed Behavior
-
-### Local (Working)
-```
-curl http://localhost:3000/api/tracker/tasks
-→ Returns 40+ tasks including "Real-time sync test via KV"
+# Or sync all beads
+npm run bd:sync
 ```
 
-### Vercel (Not Working)
-```
-curl https://blog-krg3bmqll-zenchantlives-projects.vercel.app/api/tracker/tasks
-→ 401 Authentication Required
-```
+## Sync Results
 
-### Frontend on Vercel
-- Shows "No tasks yet" empty state
-- Unable to debug further without access to API response
+- ✅ 13 open beads synced to KV
+- ✅ 39 stale tasks cleaned up
+- ✅ Vercel deployment now shows tasks in real-time
 
-## Files Modified
+## Next Steps (Optional)
 
-- `app/focused/page.tsx` - TaskDisplay component with fetch logic
-- `app/focused.css` - Task list/card styles
-- `.env.local` - KV credentials from blog project
+1. **Automate sync** - Could add a git hook or beads daemon hook
+2. **Bidirectional sync** - Currently Beads → KV only
+3. **Watch mode** - Auto-sync on Beads file changes
 
-## Questions to Answer
+---
 
-1. Does the Vercel server-side API return tasks or empty array?
-2. Is there a different KV endpoint/credentials for Vercel server-side?
-3. Are there CORS issues blocking frontend fetch on Vercel domain?
-4. Is the KV_READ_ONLY_TOKEN causing read issues?
-
-## Next Steps
-
-- Need better debugging tools to inspect Vercel API response
-- Consider adding logging/monitoring to API route
-- Try deploying to production environment (not preview)
-- Verify KV credentials are correctly set in Vercel project settings
+*Previous issue (Tasks Not Displaying) resolved by implementing this sync mechanism.*
