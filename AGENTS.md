@@ -12,6 +12,23 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
+## Sending Media via WhatsApp
+
+When sending screenshots or images to the user:
+
+```bash
+# Method: Use message tool with filePath parameter
+message action=send target=+15306354284 filePath=/path/to/image.png
+
+# Example with agent-browser screenshot:
+agent-browser open http://localhost:8765/mail
+agent-browser screenshot /tmp/agent-mail.png
+agent-browser close
+message action=send target=+15306354284 filePath=/tmp/agent-mail.png
+```
+
+**Note:** The `media` parameter with file:// URLs doesn't work. Use `filePath` parameter instead.
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
