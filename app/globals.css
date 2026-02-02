@@ -249,3 +249,168 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 }
+
+/* ==========================================================================
+   FOCUSED INTEGRATED PAGE (/focused)
+   ========================================================================== */
+
+.back-link {
+  padding: var(--space-md);
+  padding-top: calc(var(--header-height) + var(--safe-top) + var(--space-sm));
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.back-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.focused-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.current-activity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.activity-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.activity-value {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--color-accent);
+}
+
+/* ==========================================================================
+   AGENTS PANEL
+   ========================================================================== */
+
+.agents-panel h2 {
+  margin: 0 0 var(--space-md) 0;
+  font-size: var(--text-xl);
+}
+
+.current-atlas {
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.atlas-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  color: var(--color-accent);
+  font-weight: var(--font-medium);
+}
+
+.atlas-activity {
+  padding-left: calc(24px + var(--space-sm));
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+}
+
+.agents-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.no-agents {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-lg);
+}
+
+.agent-card {
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.agent-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.online { background: var(--color-status-online); }
+.status-dot.busy { background: var(--color-accent); }
+.status-dot.offline { background: var(--color-text-muted); }
+
+.agent-name {
+  font-weight: var(--font-medium);
+}
+
+.agent-task {
+  margin: var(--space-sm) 0 0 0;
+  padding-left: calc(8px + var(--space-sm));
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Header */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #18181B;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  z-index: 30;
+}
+.header-brand { display: flex; align-items: center; gap: 8px; }
+.header-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #F97316;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.header-title { font-size: 16px; font-weight: 600; color: #f2efed; }
+.header-status { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #9a8f86; }
+.status-indicator { width: 8px; height: 8px; border-radius: 50%; }
+.status-indicator.online { background: #10B981; box-shadow: 0 0 10px rgba(16,185,129,0.4); }
+.status-indicator.offline { background: #EF4444; }
