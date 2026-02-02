@@ -135,7 +135,7 @@ export function TaskWidget() {
           onCreateTask={handleCreateTask}
         />
 
-        <main className="flex-1 pb-24 md:pb-6">
+        <main className="flex-1 pb-6 md:pb-6 pt-20 md:pt-0">
           <AnimatePresence mode="wait">
             {currentView === "objective-stack" && (
               <motion.div

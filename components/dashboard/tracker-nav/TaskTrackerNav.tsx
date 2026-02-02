@@ -35,8 +35,8 @@ export function TaskTrackerNav({ currentView, onViewChange, onCreateTask }: Task
 
   return (
     <>
-      {/* Mobile Bottom Dock */}
-      <nav className="md:hidden task-mobile-dock">
+      {/* Mobile Top Dock (moved from bottom to avoid covering content) */}
+      <nav className="md:hidden task-mobile-dock-top">
         <div className="flex items-center justify-around max-w-md mx-auto">
           {Object.entries(VIEWS).map(([view, config]) => {
             const isActive = view === currentView;

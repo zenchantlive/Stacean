@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    background-color: #18181B; /* Dark Taupe / Charcoal */
+    background-color: #18181B;
     height: 100%;
   }
 
@@ -14,56 +14,83 @@
     font-family: "Inter", sans-serif;
     margin: 0;
     padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
+    /* Remove centering constraints - let content flow naturally */
+    display: block;
   }
 }
 
 @layer components {
-  /* Phone Container */
+  /* ==========================================================================
+     RESPONSIVE CONTAINER SYSTEM
+     Mobile: Full width phone-like experience
+     Desktop: Full-width responsive layout with optional phone simulation
+     ========================================================================== */
+
+  /* Default: Full-width responsive container */
+  .app-container {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #09090B;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto; /* Enable scrolling */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Phone simulation mode - ONLY when explicitly requested */
   .phone-container {
     width: 100%;
-    max-width: 400px;
+    max-width: 100%;
     height: 100dvh;
-    background-color: #09090B; /* Deep Black/Zinc */
+    background-color: #09090B;
     position: relative;
     overflow: hidden;
     display: flex;
     flex-direction: column;
   }
 
-  /* Muted Aurora Blur */
-  .aurora {
-    position: absolute;
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, rgba(200, 107, 86, 0.15) 0%, rgba(200, 107, 86, 0) 70%);
-    filter: blur(60px);
-    pointer-events: none;
-    z-index: 0;
-  }
-
+  /* Desktop: Centered phone simulation (opt-in) */
   @media (min-width: 450px) {
     .phone-container {
+      max-width: 400px;
       height: 844px;
       border-radius: 48px;
       box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
       border: 12px solid #18181B;
+      margin: 2rem auto; /* Center with margin */
     }
   }
 
-  /* Glassmorphism Card */
-  .glass-card {
-    background: rgba(39, 39, 42, 0.5);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 24px;
+  /* Desktop full-width mode (default) */
+  @media (min-width: 768px) {
+    .app-container {
+      max-width: none;
+    }
   }
 
-  /* Scroll Snap Area */
+  /* Large desktop optimizations */
+  @media (min-width: 1280px) {
+    .app-container {
+      /* Optional: max-width with centering for very large screens */
+      /* max-width: 1400px; */
+      /* margin: 0 auto; */
+    }
+  }
+
+  /* ==========================================================================
+     SCROLLING SYSTEM
+     ========================================================================== */
+
+  /* Enable smooth scrolling globally */
+  .scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Horizontal scroll snap (for widget carousels) */
   .snap-x {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
@@ -71,6 +98,27 @@
     overflow-y: hidden;
     height: 100%;
     padding-bottom: 80px;
+  }
+
+  /* Desktop: Convert horizontal snap to grid */
+  @media (min-width: 768px) {
+    .snap-x-desktop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1.5rem;
+      overflow-x: visible;
+      overflow-y: auto;
+      padding: 2rem;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    .snap-x-desktop-grid > * {
+      scroll-snap-align: none;
+      min-width: auto;
+      width: 100%;
+      height: auto;
+    }
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -86,7 +134,53 @@
     scroll-snap-align: start;
   }
 
-  /* Widgets */
+  /* ==========================================================================
+     AURORA & VISUAL EFFECTS
+     ========================================================================== */
+
+  .aurora {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(200, 107, 86, 0.15) 0%, rgba(200, 107, 86, 0) 70%);
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Desktop: Larger aurora effects */
+  @media (min-width: 768px) {
+    .aurora {
+      width: 500px;
+      height: 500px;
+      filter: blur(80px);
+    }
+  }
+
+  /* ==========================================================================
+     GLASSMORPHISM
+     ========================================================================== */
+
+  .glass-card {
+    background: rgba(39, 39, 42, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+  }
+
+  /* Desktop: More subtle glass effect */
+  @media (min-width: 768px) {
+    .glass-card {
+      background: rgba(39, 39, 42, 0.3);
+      border-radius: 16px;
+    }
+  }
+
+  /* ==========================================================================
+     WIDGETS
+     ========================================================================== */
+
   .widget {
     width: 100%;
     height: 100%;
@@ -96,7 +190,21 @@
     flex-direction: column;
   }
 
-  /* Typography Utilities */
+  /* Desktop: Widget as card */
+  @media (min-width: 768px) {
+    .widget {
+      background: rgba(39, 39, 42, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      height: auto;
+      min-height: 400px;
+    }
+  }
+
+  /* ==========================================================================
+     TYPOGRAPHY
+     ========================================================================== */
+
   .font-mono-muted {
     font-family: "JetBrains Mono", monospace;
     color: #A1A1AA;
@@ -105,5 +213,39 @@
 
   h1, h2, h3 {
     color: #FAFAFA;
+  }
+
+  /* Desktop: Larger headings */
+  @media (min-width: 768px) {
+    h1 {
+      font-size: 2.5rem;
+    }
+    h2 {
+      font-size: 1.75rem;
+    }
+    h3 {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* ==========================================================================
+     SAFE AREA & NAVIGATION SPACING
+     ========================================================================== */
+
+  /* Mobile bottom nav compensation */
+  .pb-safe {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Desktop: Remove mobile nav padding */
+  @media (min-width: 768px) {
+    .pb-safe {
+      padding-bottom: 2rem;
+    }
+  }
+
+  /* Top safe area for mobile notch/status bar */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }
