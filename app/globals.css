@@ -414,3 +414,145 @@
 .status-indicator { width: 8px; height: 8px; border-radius: 50%; }
 .status-indicator.online { background: #10B981; box-shadow: 0 0 10px rgba(16,185,129,0.4); }
 .status-indicator.offline { background: #EF4444; }
+
+/* ==========================================================================
+   RESPONSIVE STICKY NAVIGATION FOR FOCUSED PAGE
+   ========================================================================== */
+
+/* Mobile Safe Areas */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+/* Mobile: Full-width, sticky nav */
+@media (max-width: 767px) {
+  .app-container {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-container main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 24px));
+  }
+
+  /* Sticky bottom nav */
+  nav.fixed.bottom-0 {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(24, 24, 27, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Desktop: Grid layout */
+@media (min-width: 768px) {
+  .app-container main {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem;
+    padding-top: 5rem;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: visible;
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-container main {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ==========================================================================
+   RELATIVE UNITS & TYPOGRAPHY
+   ========================================================================== */
+
+/* Use rem for spacing */
+:root {
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+}
+
+/* Fluid typography */
+@media (max-width: 767px) {
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.125rem; }
+}
+
+@media (min-width: 768px) {
+  body {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+/* ==========================================================================
+   TOUCH TARGETS (44px minimum per WCAG)
+   ========================================================================== */
+
+button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 767px) {
+  button.w-12.h-12 {
+    width: 100%;
+    height: 56px;
+    border-radius: 12px;
+  }
+}
+
+/* ==========================================================================
+   CARD LAYOUTS
+   ========================================================================== */
+
+.agent-card {
+  background: rgba(39, 39, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .agent-card {
+    border-radius: 16px;
+    padding: 1.25rem;
+  }
+}
