@@ -1,0 +1,209 @@
+/* UNIFIED DASHBOARD - No scrolling, all visible */
+
+.dashboard {
+  min-height: 100vh;
+  background: #0f0d0c;
+  color: #f2efed;
+}
+
+.dashboard-main {
+  padding: 1rem;
+  padding-top: calc(64px + 1rem); /* Account for header */
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ATLAS FOCUS - Top section, always visible */
+.atlas-focus {
+  background: #18181B;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.focus-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: #9a8f86;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.focus-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.status-badge.online {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10B981;
+}
+
+.status-badge.offline {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+}
+
+.current-activity {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.last-updated {
+  font-size: 0.75rem;
+  color: #6b615a;
+  margin: 0;
+  margin-left: auto;
+}
+
+/* QUICK STATS - 3 columns, always visible */
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card {
+  background: #18181B;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stat-card svg {
+  color: #F97316;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #9a8f86;
+}
+
+/* QUICK ACTIONS */
+.quick-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.action-btn.primary {
+  background: #F97316;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: #ea580c;
+}
+
+.action-btn.secondary {
+  background: #1d1917;
+  color: #f2efed;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.action-btn.secondary:hover {
+  background: #25201d;
+}
+
+/* RECENT ACTIVITY */
+.recent-activity {
+  background: #18181B;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.recent-activity h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9a8f86;
+  margin: 0 0 1rem 0;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-time {
+  font-size: 0.75rem;
+  color: #6b615a;
+  font-family: monospace;
+  min-width: 60px;
+}
+
+.activity-message {
+  font-size: 0.875rem;
+  color: #f2efed;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .focus-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .last-updated {
+    margin-left: 0;
+  }
+}

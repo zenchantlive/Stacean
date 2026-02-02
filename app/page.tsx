@@ -1,171 +1,208 @@
 "use client";
 
-import { AtlasPulse } from "@/components/dashboard/AtlasPulse";
-import { ScreenshotStream } from "@/components/dashboard/ScreenshotStream";
-import { LedgerFeed } from "@/components/dashboard/LedgerFeed";
-import { FieldNotes } from "@/components/dashboard/FieldNotes";
-import { EcosystemMap } from "@/components/dashboard/EcosystemMap";
-import { TaskWidget } from "@/components/dashboard/TaskWidget";
-import { Activity, Camera, ScrollText, Map, MessageSquare, CheckSquare } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { Header } from "@/components/layout/Header";
+import { CheckSquare, FolderKanban, MessageSquare, ScrollText, Plus, ChevronRight } from "lucide-react";
+import Link from "next/link";
+
+type Tab = "tasks" | "projects" | "notes" | "ledger";
+
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority?: string;
+  project?: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  url: string;
+  status: "active" | "building" | "archived";
+  tasksCount?: number;
+}
 
 export default function Home() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<Tab>("tasks");
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [newTask, setNewTask] = useState("");
 
-  const scrollTo = (index: number) => {
-    if (scrollRef.current) {
-      const width = scrollRef.current.offsetWidth;
-      scrollRef.current.scrollTo({
-        left: width * index,
-        behavior: "smooth",
-      });
-      setActiveIndex(index);
-    }
-  };
-
-  // Update active index on manual scroll
   useEffect(() => {
-    const handleScroll = () => {
-      if (scrollRef.current) {
-        const index = Math.round(scrollRef.current.scrollLeft / scrollRef.current.offsetWidth);
-        setActiveIndex(index);
+    const fetchData = async () => {
+      try {
+        const [tasksRes, projectsRes] = await Promise.all([
+          fetch("/api/tracker/tasks"),
+          fetch("/api/projects")  // Need to create this endpoint
+        ]);
+        
+        const tasksData = await tasksRes.json();
+        const projectsData = await projectsRes.json();
+        
+        setTasks(Array.isArray(tasksData) ? tasksData : []);
+        setProjects(Array.isArray(projectsData) ? projectsData : []);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
       }
     };
-    const el = scrollRef.current;
-    el?.addEventListener('scroll', handleScroll);
-    return () => el?.removeEventListener('scroll', handleScroll);
+
+    fetchData();
   }, []);
 
-  const navItems = [
-    { icon: Activity, index: 0, label: "Pulse" },
-    { icon: Camera, index: 1, label: "Screenshots" },
-    { icon: ScrollText, index: 2, label: "Ledger" },
-    { icon: Map, index: 3, label: "Ecosystem" },
-    { icon: MessageSquare, index: 4, label: "Notes" },
-    { icon: CheckSquare, index: 5, label: "Tasks" },
-  ];
+  const activeTasks = tasks.filter(t => t.status !== "done" && t.status !== "closed");
+
+  const handleAddTask = () => {
+    if (!newTask.trim()) return;
+    // Create task via API
+    fetch("/api/tracker/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: newTask,
+        description: "",
+        priority: "medium",
+        project: "",
+        assignedTo: "JORDAN"
+      })
+    }).then(() => {
+      setNewTask("");
+      // Refresh tasks
+      fetch("/api/tracker/tasks")
+        .then(res => res.json())
+        .then(data => setTasks(Array.isArray(data) ? data : []));
+    });
+  };
 
   return (
-    <div className="app-container">
-      {/* Aurora Background Effects */}
-      <div className="aurora top-[-50px] left-[-50px]" />
-      <div className="aurora bottom-[-100px] right-[-50px] opacity-50" />
+    <div className="app">
+      <Header />
       
-      {/* Mobile: Horizontal scroll layout */}
-      <main 
-        ref={scrollRef}
-        className="snap-x w-full h-full flex overflow-x-auto snap-mandatory snap-x relative z-10 no-scrollbar md:hidden"
-      >
-        <section className="widget snap-center min-w-full flex items-center justify-center">
-          <AtlasPulse />
-        </section>
+      {/* TABS */}
+      <nav className="app-tabs">
+        <button 
+          className={`tab ${activeTab === "tasks" ? "active" : ""}`}
+          onClick={() => setActiveTab("tasks")}
+        >
+          <CheckSquare size={18} />
+          Tasks
+          <span className="tab-count">{activeTasks.length}</span>
+        </button>
         
-        <section className="widget snap-center min-w-full pt-16 px-6">
-          <ScreenshotStream />
-        </section>
-
-        <section className="widget snap-center min-w-full pt-16 px-6">
-          <LedgerFeed />
-        </section>
-
-        <section className="widget snap-center min-w-full pt-16 px-6">
-          <EcosystemMap />
-        </section>
-
-        <section className="widget snap-center min-w-full pt-16 px-6">
-          <FieldNotes />
-        </section>
-
-        <section className="widget snap-center min-w-full pt-16 px-6">
-          <TaskWidget isActive={activeIndex === 5} />
-        </section>
-      </main>
-
-      {/* Desktop: Grid layout */}
-      <main className="hidden md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 p-6 relative z-10 overflow-y-auto h-full pb-24">
-        <section className="widget">
-          <AtlasPulse />
-        </section>
+        <button 
+          className={`tab ${activeTab === "projects" ? "active" : ""}`}
+          onClick={() => setActiveTab("projects")}
+        >
+          <FolderKanban size={18} />
+          Projects
+        </button>
         
-        <section className="widget">
-          <ScreenshotStream />
-        </section>
-
-        <section className="widget">
-          <LedgerFeed />
-        </section>
-
-        <section className="widget">
-          <EcosystemMap />
-        </section>
-
-        <section className="widget">
-          <FieldNotes />
-        </section>
-
-        <section className="widget">
-          <TaskWidget isActive={activeIndex === 5} />
-        </section>
-      </main>
-      
-      {/* Mobile: iOS-style Dock */}
-      <nav className="md:hidden absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[360px] h-16 bg-[#18181B]/60 backdrop-blur-2xl rounded-3xl border border-white/5 flex items-center justify-around px-2 z-50 shadow-2xl">
-        {navItems.map((item) => (
-          <button 
-            key={item.index}
-            onClick={() => scrollTo(item.index)}
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 group ${
-              activeIndex === item.index 
-                ? "bg-[#F97316] text-white shadow-lg shadow-[#F97316]/20 scale-110" 
-                : "text-[#71717A] hover:bg-white/5"
-            }`}
-          >
-            <item.icon size={20} className="group-active:scale-90 transition-transform" />
-          </button>
-        ))}
+        <button 
+          className={`tab ${activeTab === "notes" ? "active" : ""}`}
+          onClick={() => setActiveTab("notes")}
+        >
+          <MessageSquare size={18} />
+          Notes
+        </button>
+        
+        <button 
+          className={`tab ${activeTab === "ledger" ? "active" : ""}`}
+          onClick={() => setActiveTab("ledger")}
+        >
+          <ScrollText size={18} />
+          Ledger
+        </button>
       </nav>
 
-      {/* Desktop: Top Navigation Bar */}
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-[#18181B]/80 backdrop-blur-xl border-b border-white/5 items-center justify-between px-6 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#F97316] flex items-center justify-center">
-            <Activity size={18} className="text-white" />
+      {/* CONTENT AREA */}
+      <main className="app-content">
+        {activeTab === "tasks" && (
+          <div className="tasks-view">
+            {/* Quick Add */}
+            <div className="quick-add">
+              <input
+                type="text"
+                placeholder="Add a task..."
+                value={newTask}
+                onChange={e => setNewTask(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleAddTask()}
+              />
+              <button onClick={handleAddTask}>
+                <Plus size={18} />
+              </button>
+            </div>
+
+            {/* Tasks List */}
+            <div className="tasks-list">
+              {activeTasks.length === 0 ? (
+                <p className="empty-state">No active tasks</p>
+              ) : (
+                activeTasks.map(task => (
+                  <div key={task.id} className="task-item">
+                    <div className="task-checkbox">
+                      <input type="checkbox" id={task.id} />
+                    </div>
+                    <label htmlFor={task.id} className="task-content">
+                      <span className="task-title">{task.title}</span>
+                      {task.project && (
+                        <span className="task-project">{task.project}</span>
+                      )}
+                    </label>
+                    <ChevronRight size={16} className="task-arrow" />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-          <span className="font-semibold text-white">Atlas Cockpit</span>
-        </div>
-        
-        <div className="flex items-center gap-1">
-          {navItems.map((item) => (
-            <button 
-              key={item.index}
-              onClick={() => {
-                // Scroll to section on desktop AND update activeIndex
-                const sections = document.querySelectorAll('.widget');
-                sections[item.index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setActiveIndex(item.index);
-              }}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 ${
-                activeIndex === item.index 
-                  ? "bg-[#F97316]/20 text-[#F97316]" 
-                  : "text-[#71717A] hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <item.icon size={18} />
-              <span className="text-sm font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+        )}
 
-      {/* Desktop: Add top padding to account for fixed nav */}
-      <style jsx>{`
-        @media (min-width: 768px) {
-          main {
-            padding-top: 5rem;
-          }
-        }
-      `}</style>
+        {activeTab === "projects" && (
+          <div className="projects-view">
+            <h3>Projects</h3>
+            <p className="view-description">
+              Projects are linked to tasks. Manage tasks and see project context together.
+            </p>
+            {/* Projects grid - each links to related tasks */}
+            <div className="projects-grid">
+              {projects.map(project => (
+                <div key={project.id} className="project-card">
+                  <div className="project-header">
+                    <FolderKanban size={20} />
+                    <span className="project-name">{project.name}</span>
+                    <span className={`project-status ${project.status}`}>
+                      {project.status}
+                    </span>
+                  </div>
+                  <div className="project-tasks">
+                    {project.tasksCount || 0} tasks
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "notes" && (
+          <div className="notes-view">
+            <h3>Notes for Atlas</h3>
+            <p className="view-description">
+              Leave notes for Atlas to read and act on.
+            </p>
+            {/* Notes input and list */}
+          </div>
+        )}
+
+        {activeTab === "ledger" && (
+          <div className="ledger-view">
+            <h3>Activity Ledger</h3>
+            <p className="view-description">
+              See everything Atlas has done.
+            </p>
+            {/* Ledger entries */}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
