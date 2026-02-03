@@ -34,8 +34,13 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
     )
   }
 
-  // Simple markdown to HTML conversion
-  const htmlContent = post.content
+  // Simple markdown to HTML conversion (with basic escape)
+  const escapedContent = post.content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  const htmlContent = escapedContent
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^#### (.*$)/gim, '<h4>$1</h4>')

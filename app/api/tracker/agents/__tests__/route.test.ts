@@ -4,25 +4,34 @@
  * Tests GET /api/tracker/agents and POST /api/tracker/agents
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '../route';
-import { agentAdapter } from '@/lib/integrations/kv/agents';
+import { agentAdapter } from '@/lib/integrations/beads/agents';
 
 // Mock the agent adapter
-jest.mock('@/lib/integrations/kv/agents', () => ({
-  agentAdapter: {
-    getActiveAgents: jest.fn(),
-    createAgent: jest.fn(),
-  },
-}));
+vi.mock('@/lib/integrations/beads/agents', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/integrations/beads/agents')>();
+  return {
+    ...actual,
+    agentAdapter: {
+      ...actual.agentAdapter,
+      getActiveAgents: vi.fn(),
+      createAgent: vi.fn(),
+      getAgent: vi.fn(),
+      updateAgent: vi.fn(),
+      deleteAgent: vi.fn(),
+    },
+  };
+});
 
 describe('GET /api/tracker/agents', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns 500 on KV error', async () => {
-    (agentAdapter.getActiveAgents as jest.Mock).mockRejectedValue(new Error('KV failed'));
+    (agentAdapter.getActiveAgents as vi.Mock).mockRejectedValue(new Error('KV failed'));
 
     const response = await GET();
     const data = await response.json();
@@ -32,7 +41,7 @@ describe('GET /api/tracker/agents', () => {
   });
 
   it('returns empty array when no agents', async () => {
-    (agentAdapter.getActiveAgents as jest.Mock).mockResolvedValue([]);
+    (agentAdapter.getActiveAgents as vi.Mock).mockResolvedValue([]);
 
     const response = await GET();
     const data = await response.json();
@@ -66,15 +75,15 @@ describe('GET /api/tracker/agents', () => {
         updatedAt: now,
       },
     ];
-    (agentAdapter.getActiveAgents as jest.Mock).mockResolvedValue(mockAgents);
+    (agentAdapter.getActiveAgents as vi.Mock).mockResolvedValue(mockAgents);
 
     const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
     expect(data).toHaveLength(2);
-    expect(data[0].codeName).toBe('Solar-Bear'); // Most recent heartbeat
-    expect(data[1].codeName).toBe('Neon-Hawk');
+    expect(data[0].codeName).toBe('Neon-Hawk'); // Most recent heartbeat (index 0 in mock is Neon-Hawk)
+    expect(data[1].codeName).toBe('Solar-Bear');
   });
 
   it('handles agents with different statuses', async () => {
@@ -114,7 +123,7 @@ describe('GET /api/tracker/agents', () => {
         updatedAt: now - 2000,
       },
     ];
-    (agentAdapter.getActiveAgents as jest.Mock).mockResolvedValue(mockAgents);
+    (agentAdapter.getActiveAgents as vi.Mock).mockResolvedValue(mockAgents);
 
     const response = await GET();
     const data = await response.json();
@@ -142,7 +151,7 @@ describe('GET /api/tracker/agents', () => {
         updatedAt: now,
       },
     ];
-    (agentAdapter.getActiveAgents as jest.Mock).mockResolvedValue(mockAgents);
+    (agentAdapter.getActiveAgents as vi.Mock).mockResolvedValue(mockAgents);
 
     const response = await GET();
     const data = await response.json();
@@ -155,7 +164,7 @@ describe('GET /api/tracker/agents', () => {
 
 describe('POST /api/tracker/agents', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('creates agent with minimal data', async () => {
@@ -169,7 +178,7 @@ describe('POST /api/tracker/agents', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (agentAdapter.createAgent as jest.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.createAgent as vi.Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents', {
       method: 'POST',
@@ -187,7 +196,7 @@ describe('POST /api/tracker/agents', () => {
     expect(agentAdapter.createAgent).toHaveBeenCalledWith({});
 
     // Verify codeName and initials are auto-generated
-    const createCall = (agentAdapter.createAgent as jest.Mock).mock.calls[0][0];
+    const createCall = (agentAdapter.createAgent as vi.Mock).mock.calls[0][0];
     expect(createCall.id).toBeUndefined(); // Auto-generated
     expect(createCall.codeName).toBeUndefined(); // Auto-generated
     expect(createCall.initials).toBeUndefined(); // Auto-generated
@@ -204,7 +213,7 @@ describe('POST /api/tracker/agents', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (agentAdapter.createAgent as jest.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.createAgent as vi.Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents', {
       method: 'POST',
@@ -230,7 +239,7 @@ describe('POST /api/tracker/agents', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (agentAdapter.createAgent as jest.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.createAgent as vi.Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents', {
       method: 'POST',
@@ -263,7 +272,7 @@ describe('POST /api/tracker/agents', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (agentAdapter.createAgent as jest.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.createAgent as vi.Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents', {
       method: 'POST',
@@ -291,7 +300,7 @@ describe('POST /api/tracker/agents', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (agentAdapter.createAgent as jest.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.createAgent as vi.Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents', {
       method: 'POST',
@@ -320,7 +329,7 @@ describe('POST /api/tracker/agents', () => {
   });
 
   it('returns 500 on create error', async () => {
-    (agentAdapter.createAgent as jest.Mock).mockRejectedValue(new Error('KV write failed'));
+    (agentAdapter.createAgent as vi.Mock).mockRejectedValue(new Error('KV write failed'));
 
     const request = new Request('http://localhost:3000/api/tracker/agents', {
       method: 'POST',

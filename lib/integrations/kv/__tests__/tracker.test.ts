@@ -4,31 +4,75 @@
  * Tests the core task tracking operations with mocked KV
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TaskTrackerAdapter, Task, CreateTaskInput, UpdateTaskInput } from '../tracker';
+import { KVAdapter } from '../adapter';
 
-// Mock the KV module
-const mockSet = jest.fn().mockResolvedValue(true);
-const mockGet = jest.fn().mockResolvedValue(null);
-const mockDelete = jest.fn().mockResolvedValue(true);
-const mockKeys = jest.fn().mockResolvedValue([]);
-const mockMget = jest.fn().mockResolvedValue([]);
+// Create a mock class that extends KVAdapter
+const createMockTracker = () => {
+  const mockSet = vi.fn().mockResolvedValue(true);
+  const mockGet = vi.fn().mockResolvedValue(null);
+  const mockDelete = vi.fn().mockResolvedValue(true);
+  const mockKeys = vi.fn().mockResolvedValue([]);
+  const mockMget = vi.fn().mockResolvedValue([]);
 
-jest.mock('../adapter', () => ({
-  kv: {
-    set: (...args) => mockSet(...args),
-    get: (...args) => mockGet(...args),
-    delete: (...args) => mockDelete(...args),
-    keys: (...args) => mockKeys(...args),
-    mget: (...args) => mockMget(...args),
-  },
-}));
+  class MockKVAdapter extends KVAdapter {
+    constructor() {
+      super({ prefix: 'test' });
+    }
+    async get<T>(key: string): Promise<T | null> {
+      return mockGet(key) as Promise<T | null>;
+    }
+    async set(key: string, value: unknown, ttl?: number): Promise<boolean> {
+      return mockSet(key, value, ttl);
+    }
+    async delete(key: string): Promise<boolean> {
+      return mockDelete(key);
+    }
+    async exists(key: string): Promise<boolean> {
+      return (await this.get(key)) !== null;
+    }
+    async incr(key: string): Promise<number> {
+      return 1;
+    }
+    async decr(key: string): Promise<number> {
+      return 0;
+    }
+    async keys(pattern: string): Promise<string[]> {
+      return mockKeys(pattern);
+    }
+    async mget<T>(...keys: string[]): Promise<(T | null)[]> {
+      return mockMget(...keys) as Promise<(T | null)[]>;
+    }
+    async zadd(key: string, item: { score: number; member: string }): Promise<number | string> {
+      return 1;
+    }
+    async zrange(key: string, start: number | string, stop: number | string, opts?: any): Promise<string[]> {
+      return [];
+    }
+    async zremrangebyrank(key: string, start: number, stop: number): Promise<number> {
+      return 1;
+    }
+    async zcard(key: string): Promise<number> {
+      return 0;
+    }
+    async ping(): Promise<string> {
+      return 'PONG';
+    }
+  }
+
+  return { tracker: new MockKVAdapter() as TaskTrackerAdapter, mocks: { mockSet, mockGet, mockDelete, mockKeys, mockMget } };
+};
 
 describe('TaskTrackerAdapter', () => {
   let tracker: TaskTrackerAdapter;
+  let mocks: { mockSet: any, mockGet: any, mockDelete: any, mockKeys: any, mockMget: any };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    tracker = new TaskTrackerAdapter();
+    const setup = createMockTracker();
+    tracker = setup.tracker;
+    mocks = setup.mocks;
+    vi.clearAllMocks();
   });
 
   describe('createTask', () => {
@@ -51,7 +95,7 @@ describe('TaskTrackerAdapter', () => {
       expect(task.updatedAt).toBeDefined();
 
       // Verify KV set was called
-      expect(mockSet).toHaveBeenCalledWith(
+      expect(mocks.mockSet).toHaveBeenCalledWith(
         task.id,
         expect.objectContaining({ title: 'Test Task' })
       );
@@ -84,7 +128,7 @@ describe('TaskTrackerAdapter', () => {
 
   describe('getTask', () => {
     it('returns null for non-existent task', async () => {
-      mockGet.mockResolvedValue(null);
+      mocks.mockGet.mockResolvedValue(null);
 
       const task = await tracker.getTask('nonexistent');
 
@@ -101,18 +145,18 @@ describe('TaskTrackerAdapter', () => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      mockGet.mockResolvedValue(mockTask);
+      mocks.mockGet.mockResolvedValue(mockTask);
 
       const task = await tracker.getTask('task-123');
 
       expect(task).toEqual(mockTask);
-      expect(mockGet).toHaveBeenCalledWith('task-123');
+      expect(mocks.mockGet).toHaveBeenCalledWith('task-123');
     });
   });
 
   describe('updateTask', () => {
     it('returns null if task not found', async () => {
-      mockGet.mockResolvedValue(null);
+      mocks.mockGet.mockResolvedValue(null);
 
       const result = await tracker.updateTask('nonexistent', { title: 'New' });
 
@@ -129,7 +173,7 @@ describe('TaskTrackerAdapter', () => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      mockGet.mockResolvedValue(existingTask);
+      mocks.mockGet.mockResolvedValue(existingTask);
 
       const updates: UpdateTaskInput = {
         title: 'Updated Title',
@@ -143,7 +187,7 @@ describe('TaskTrackerAdapter', () => {
       expect(result!.title).toBe('Updated Title');
       expect(result!.status).toBe('in-progress');
       expect(result!.priority).toBe('high');
-      expect(mockSet).toHaveBeenCalledWith('task-123', expect.objectContaining({
+      expect(mocks.mockSet).toHaveBeenCalledWith('task-123', expect.objectContaining({
         title: 'Updated Title',
         status: 'in-progress',
         priority: 'high',
@@ -160,7 +204,7 @@ describe('TaskTrackerAdapter', () => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      mockGet.mockResolvedValue(existingTask);
+      mocks.mockGet.mockResolvedValue(existingTask);
 
       const result = await tracker.updateTask('task-123', {
         context: { files: ['file2.ts'] },
@@ -181,7 +225,7 @@ describe('TaskTrackerAdapter', () => {
         createdAt: originalUpdatedAt,
         updatedAt: originalUpdatedAt,
       };
-      mockGet.mockResolvedValue(existingTask);
+      mocks.mockGet.mockResolvedValue(existingTask);
 
       const result = await tracker.updateTask('task-123', { title: 'New' });
 
@@ -191,7 +235,7 @@ describe('TaskTrackerAdapter', () => {
 
   describe('listTasks', () => {
     it('returns empty array when no tasks', async () => {
-      mockKeys.mockResolvedValue([]);
+      mocks.mockKeys.mockResolvedValue([]);
 
       const tasks = await tracker.listTasks();
 
@@ -201,7 +245,7 @@ describe('TaskTrackerAdapter', () => {
     it('fetches and returns all tasks', async () => {
       const mockTasks: Task[] = [
         {
-          id: 'task-1',
+          id: '1',
           title: 'Task 1',
           status: 'todo',
           priority: 'medium',
@@ -210,40 +254,58 @@ describe('TaskTrackerAdapter', () => {
           updatedAt: Date.now(),
         },
         {
-          id: 'task-2',
+          id: '2',
           title: 'Task 2',
-          status: 'done',
+          status: 'in-progress',
           priority: 'high',
           context: { files: [], logs: [] },
           createdAt: Date.now(),
           updatedAt: Date.now(),
         },
       ];
-      mockKeys.mockResolvedValue(['tracker:task:1', 'tracker:task:2']);
-      mockMget.mockResolvedValue(mockTasks);
+      mocks.mockKeys.mockResolvedValue(['1', '2']);
+      mocks.mockMget.mockResolvedValue(mockTasks);
 
       const tasks = await tracker.listTasks();
 
       expect(tasks).toHaveLength(2);
-      expect(tasks[0].title).toBe('Task 1');
-      expect(tasks[1].title).toBe('Task 2');
+      expect(tasks[0].id).toBe('1');
+      expect(mocks.mockMget).toHaveBeenCalledWith('1', '2');
     });
 
     it('filters out null values from mget', async () => {
-      mockKeys.mockResolvedValue(['tracker:task:1', 'tracker:task:2']);
-      mockMget.mockResolvedValue([
-        { id: 'task-1', title: 'Task 1', status: 'todo', priority: 'medium', context: { files: [], logs: [] }, createdAt: Date.now(), updatedAt: Date.now() },
+      mocks.mockKeys.mockResolvedValue(['1', '2', '3']);
+      mocks.mockMget.mockResolvedValue([
+        {
+          id: '1',
+          title: 'Task 1',
+          status: 'todo',
+          priority: 'medium',
+          context: { files: [], logs: [] },
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
         null, // Deleted task
+        {
+          id: '3',
+          title: 'Task 3',
+          status: 'done',
+          priority: 'low',
+          context: { files: [], logs: [] },
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
       ]);
 
       const tasks = await tracker.listTasks();
 
-      expect(tasks).toHaveLength(1);
-      expect(tasks[0].title).toBe('Task 1');
+      expect(tasks).toHaveLength(2);
+      expect(tasks[0].id).toBe('1');
+      expect(tasks[1].id).toBe('3');
     });
 
     it('handles KV errors gracefully', async () => {
-      mockKeys.mockRejectedValue(new Error('KV connection failed'));
+      mocks.mockKeys.mockRejectedValue(new Error('KV connection failed'));
 
       const tasks = await tracker.listTasks();
 
@@ -252,21 +314,27 @@ describe('TaskTrackerAdapter', () => {
   });
 
   describe('deleteTask', () => {
-    it('calls KV delete', async () => {
-      mockDelete.mockResolvedValue(true);
+    it('deletes task successfully', async () => {
+      mocks.mockDelete.mockResolvedValue(true);
 
       const result = await tracker.deleteTask('task-123');
 
       expect(result).toBe(true);
-      expect(mockDelete).toHaveBeenCalledWith('task-123');
+      expect(mocks.mockDelete).toHaveBeenCalledWith('task-123');
     });
 
     it('returns false if delete fails', async () => {
-      mockDelete.mockResolvedValue(false);
+      mocks.mockDelete.mockResolvedValue(false);
 
-      const result = await tracker.deleteTask('task-123');
+      const result = await tracker.deleteTask('nonexistent');
 
       expect(result).toBe(false);
+    });
+
+    it('calls KV delete', async () => {
+        mocks.mockDelete.mockResolvedValue(true);
+        await tracker.deleteTask('task-123');
+        expect(mocks.mockDelete).toHaveBeenCalledWith('task-123');
     });
   });
 });

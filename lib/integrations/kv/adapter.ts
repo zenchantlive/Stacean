@@ -28,7 +28,7 @@ interface KVClient {
   keys(pattern: string): Promise<string[]>;
   mget<T>(...keys: string[]): Promise<(T | null)[]>;
   zadd(key: string, member: { score: number; member: string }): Promise<number | string>; // Vercel returns number | string
-  zrange(key: string, start: number, stop: number): Promise<string[]>; // Simple string[] return for our usage
+  zrange(key: string, start: number | string, stop: number | string, opts?: { byScore?: boolean; rev?: boolean; offset?: number; count?: number }): Promise<string[]>;
   zremrangebyrank(key: string, start: number, stop: number): Promise<number>;
   zcard(key: string): Promise<number>;
   ping(): Promise<string>;

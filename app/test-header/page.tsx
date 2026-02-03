@@ -132,7 +132,7 @@ export default function TestHeaderPage() {
             </li>
             <li className="flex items-start gap-2 text-[#A1A1AA]">
               <span className="mt-1">□</span>
-              <span>Text doesn't overlap or wrap incorrectly</span>
+              <span>Text doesn&apos;t overlap or wrap incorrectly</span>
             </li>
           </ul>
         </div>

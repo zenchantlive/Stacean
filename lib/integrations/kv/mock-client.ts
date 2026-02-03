@@ -83,47 +83,46 @@ export class MockKV {
     return 1;
   }
 
-  async zrange(key: string, start: number, stop: number): Promise<string[]> {
-    const list = this.zstore.get(key) || [];
+  async zrange(
+    key: string,
+    start: number | string,
+    stop: number | string,
+    opts?: { byScore?: boolean; rev?: boolean; offset?: number; count?: number }
+  ): Promise<string[]> {
+    let list = [...(this.zstore.get(key) || [])];
     const len = list.length;
-    
     if (len === 0) return [];
-    
-    // Handle Redis-style indices:
-    // 0, -1 = all items (0 to length-1)
-    // 0, 10 = first 11 items (0 to 10)
-    // -10, -1 = last 10 items
-    // -1, -1 = last item (length-1)
-    
-    let s, e;
-    
-    if (stop === -1) {
-      e = len - 1;
-      if (start >= 0) {
-        s = start;
-      } else {
-        // Negative start: count from end
-        s = Math.max(0, len + start);
-      }
-    } else if (stop >= 0) {
-      e = stop;
-      if (start >= 0) {
-        s = start;
-      } else {
-        // Negative start
-        s = Math.max(0, len + start);
-      }
-    } else {
-      return [];
+
+    if (opts?.byScore) {
+      // Handle numeric bounds for byScore
+      const min = start === '-inf' ? -Infinity : Number(start);
+      const max = stop === '+inf' ? Infinity : Number(stop);
+      list = list.filter(item => item.score >= min && item.score <= max);
+    }
+
+    if (opts?.rev) {
+      list.reverse();
+    }
+
+    if (!opts?.byScore) {
+      // Handle rank-based slicing (Redis 0-based indices)
+      let s = typeof start === 'number' ? (start >= 0 ? start : len + start) : 0;
+      let e = typeof stop === 'number' ? (stop >= 0 ? stop : len + stop) : len - 1;
+      
+      s = Math.max(0, s);
+      e = Math.min(len - 1, e);
+      
+      if (s > e) return [];
+      list = list.slice(s, e + 1);
+    }
+
+    if (opts?.offset !== undefined || opts?.count !== undefined) {
+      const offset = opts.offset || 0;
+      const count = opts.count || list.length;
+      list = list.slice(offset, offset + count);
     }
     
-    // Ensure bounds
-    s = Math.max(0, s);
-    e = Math.min(len - 1, e);
-    
-    if (s > e) return [];
-    
-    return list.slice(s, e + 1).map(i => i.member);
+    return list.map(i => i.member);
   }
 
   async zremrangebyrank(key: string, start: number, stop: number): Promise<number> {

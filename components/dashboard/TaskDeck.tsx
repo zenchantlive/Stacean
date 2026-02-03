@@ -62,7 +62,7 @@ export function TaskDeck({ agent, task, onAction, onTaskUpdate }: TaskDeckProps)
           {showLogs ? (
             <div className="space-y-1">
               {agent.context.logs.length === 0 ? (
-                <span className="text-zinc-600 italic">// No logs yet...</span>
+                <span className="text-zinc-600 italic">No logs yet…</span>
               ) : (
                 agent.context.logs.slice().reverse().map((log, i) => (
                   <div key={i} className="flex gap-2">

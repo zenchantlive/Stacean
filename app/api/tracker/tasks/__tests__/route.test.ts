@@ -4,25 +4,26 @@
  * Tests GET /api/tracker/tasks and POST /api/tracker/tasks
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '../route';
 import { taskTracker } from '@/lib/integrations/kv/tracker';
 
 // Mock the task tracker
-jest.mock('@/lib/integrations/kv/tracker', () => ({
+vi.mock('@/lib/integrations/kv/tracker', () => ({
   taskTracker: {
-    listTasks: jest.fn(),
-    createTask: jest.fn(),
+    listTasks: vi.fn(),
+    createTask: vi.fn(),
   },
 }));
 
 describe('GET /api/tracker/tasks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns 500 on KV error', async () => {
-    (taskTracker.listTasks as jest.Mock).mockRejectedValue(new Error('KV failed'));
+    (taskTracker.listTasks as vi.Mock).mockRejectedValue(new Error('KV failed'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks');
     const response = await GET(request);
@@ -33,7 +34,7 @@ describe('GET /api/tracker/tasks', () => {
   });
 
   it('returns empty array when no tasks', async () => {
-    (taskTracker.listTasks as jest.Mock).mockResolvedValue([]);
+    (taskTracker.listTasks as vi.Mock).mockResolvedValue([]);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks');
     const response = await GET(request);
@@ -48,7 +49,7 @@ describe('GET /api/tracker/tasks', () => {
       { id: '1', title: 'Task 1', status: 'todo' as const, priority: 'medium' as const, context: { files: [], logs: [] }, createdAt: 1, updatedAt: 1 },
       { id: '2', title: 'Task 2', status: 'done' as const, priority: 'high' as const, context: { files: [], logs: [] }, createdAt: 2, updatedAt: 2 },
     ];
-    (taskTracker.listTasks as jest.Mock).mockResolvedValue(mockTasks);
+    (taskTracker.listTasks as vi.Mock).mockResolvedValue(mockTasks);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks');
     const response = await GET(request);
@@ -63,7 +64,7 @@ describe('GET /api/tracker/tasks', () => {
 
 describe('POST /api/tracker/tasks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns 400 if title is missing', async () => {
@@ -102,7 +103,7 @@ describe('POST /api/tracker/tasks', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (taskTracker.createTask as jest.Mock).mockResolvedValue(mockTask);
+    (taskTracker.createTask as vi.Mock).mockResolvedValue(mockTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks', {
       method: 'POST',
@@ -131,7 +132,7 @@ describe('POST /api/tracker/tasks', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (taskTracker.createTask as jest.Mock).mockResolvedValue(mockTask);
+    (taskTracker.createTask as vi.Mock).mockResolvedValue(mockTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks', {
       method: 'POST',
@@ -156,7 +157,7 @@ describe('POST /api/tracker/tasks', () => {
   });
 
   it('returns 500 on create error', async () => {
-    (taskTracker.createTask as jest.Mock).mockRejectedValue(new Error('KV write failed'));
+    (taskTracker.createTask as vi.Mock).mockRejectedValue(new Error('KV write failed'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks', {
       method: 'POST',

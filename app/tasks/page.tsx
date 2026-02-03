@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckSquare, FileText, BookOpen, Activity, Plus, Search, Filter, MessageSquare } from "lucide-react";
+import { CheckSquare, FileText, BookOpen, Activity, Plus, Search, Filter, MessageSquare, Settings } from "lucide-react";
 import { Task, TaskStatus, TaskPriority } from "@/lib/types/tracker";
 import ChatTab from "@/components/chat/ChatTab";
 
@@ -14,7 +14,7 @@ interface AgentSession {
   currentAction?: string;
 }
 
-type TabType = "tasks" | "projects" | "notes" | "ledger" | "chat";
+type TabType = "tasks" | "projects" | "notes" | "ledger" | "chat" | "settings";
 
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<TabType>("tasks");
@@ -262,6 +262,39 @@ export default function TasksPage() {
     </div>
   );
 
+  const renderSettingsTab = () => (
+    <div className="space-y-6">
+      <div className="bg-[#18181B] border border-[#27272A] rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Channel Settings</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#A1A1AA] mb-1.5">Stacean Secret</label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                readOnly
+                value="stacean-dev-secret-123"
+                className="flex-1 bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-2 text-sm text-[#71717A]"
+              />
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText("stacean-dev-secret-123");
+                  alert("Secret copied to clipboard!");
+                }}
+                className="px-4 py-2 bg-[#27272A] text-white rounded-lg text-sm hover:bg-[#3F3F46] transition-colors"
+              >
+                Copy
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-[#71717A]">
+              Paste this into your OpenClaw `clawd.toml` under `channels.stacean.accounts.default.secret`.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#09090B] pb-20">
       {/* Header */}
@@ -282,6 +315,7 @@ export default function TasksPage() {
             { id: "notes" as TabType, icon: BookOpen, label: "Notes", count: 0 },
             { id: "ledger" as TabType, icon: Activity, label: "Ledger", count: 4 },
             { id: "chat" as TabType, icon: MessageSquare, label: "Chat", count: 0 },
+            { id: "settings" as TabType, icon: Settings, label: "Settings", count: 0 },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -314,6 +348,7 @@ export default function TasksPage() {
         {activeTab === "notes" && renderNotesTab()}
         {activeTab === "ledger" && renderLedgerTab()}
         {activeTab === "chat" && <ChatTab />}
+        {activeTab === "settings" && renderSettingsTab()}
       </main>
 
       {/* Create Task Sheet */}

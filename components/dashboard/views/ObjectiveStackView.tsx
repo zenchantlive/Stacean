@@ -133,7 +133,7 @@ export function ObjectiveStackView({
       <div className="space-y-4">
         {objectives.map(objective => {
           const isExpanded = expandedObjectives.has(objective.id);
-          const children = getChildTasks(objective.id, activeTasks);
+          const childTasks = getChildTasks(objective.id, activeTasks);
           const isReady = isParentReady(objective.id, activeTasks);
           const isObjectiveTask = isObjective(objective, activeTasks);
 
@@ -141,7 +141,7 @@ export function ObjectiveStackView({
             <ObjectiveCard
               key={objective.id}
               objective={objective}
-              children={children}
+              childTasks={childTasks}
               isExpanded={isExpanded}
               isReady={isReady}
               isObjectiveTask={isObjectiveTask}
@@ -163,7 +163,7 @@ export function ObjectiveStackView({
 
 interface ObjectiveCardProps {
   objective: Task;
-  children: Task[];
+  childTasks: Task[];
   isExpanded: boolean;
   isReady: boolean;
   isObjectiveTask: boolean;
@@ -175,7 +175,7 @@ interface ObjectiveCardProps {
 
 function ObjectiveCard({
   objective,
-  children,
+  childTasks,
   isExpanded,
   isReady,
   isObjectiveTask,
@@ -187,7 +187,7 @@ function ObjectiveCard({
   const statusConfig = STATUS_COLORS[objective.status];
   const priorityColor = PRIORITY_COLORS[objective.priority];
 
-  // Sort children by priority
+  // Sort child tasks by priority
   const sortedChildren = useMemo(() => {
     const priorityOrder: Record<TaskPriority, number> = {
       urgent: 0,
@@ -195,8 +195,8 @@ function ObjectiveCard({
       medium: 2,
       low: 3,
     };
-    return [...children].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-  }, [children]);
+    return [...childTasks].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  }, [childTasks]);
 
   return (
     <motion.div
@@ -230,7 +230,7 @@ function ObjectiveCard({
               {objective.title}
             </h3>
             {/* Ready Badge */}
-            {isReady && children.length > 0 && (
+            {isReady && childTasks.length > 0 && (
               <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-medium text-[#8ea89e] bg-[#8ea89e]/10 rounded-full">
                 Ready
               </span>
@@ -259,9 +259,9 @@ function ObjectiveCard({
             )}
 
             {/* Child Count */}
-            {children.length > 0 && (
+            {childTasks.length > 0 && (
               <span className="text-[10px] text-[#9a8f86]">
-                {children.length} subtask{children.length !== 1 ? 's' : ''}
+                {childTasks.length} subtask{childTasks.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>

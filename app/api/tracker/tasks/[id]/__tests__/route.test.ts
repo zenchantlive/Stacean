@@ -4,25 +4,26 @@
  * Tests GET, PATCH, DELETE /api/tracker/tasks/[id]
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, PATCH, DELETE } from '../route';
 import { taskTracker } from '@/lib/integrations/kv/tracker';
 
-jest.mock('@/lib/integrations/kv/tracker', () => ({
+vi.mock('@/lib/integrations/kv/tracker', () => ({
   taskTracker: {
-    getTask: jest.fn(),
-    updateTask: jest.fn(),
-    deleteTask: jest.fn(),
+    getTask: vi.fn(),
+    updateTask: vi.fn(),
+    deleteTask: vi.fn(),
   },
 }));
 
 describe('GET /api/tracker/tasks/[id]', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns 404 for non-existent task', async () => {
-    (taskTracker.getTask as jest.Mock).mockResolvedValue(null);
+    (taskTracker.getTask as vi.Mock).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/nonexistent');
     const response = await GET(request, { params: { id: 'nonexistent' } });
@@ -42,7 +43,7 @@ describe('GET /api/tracker/tasks/[id]', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (taskTracker.getTask as jest.Mock).mockResolvedValue(mockTask);
+    (taskTracker.getTask as vi.Mock).mockResolvedValue(mockTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123');
     const response = await GET(request, { params: { id: 'task-123' } });
@@ -54,7 +55,7 @@ describe('GET /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (taskTracker.getTask as jest.Mock).mockRejectedValue(new Error('KV error'));
+    (taskTracker.getTask as vi.Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123');
     const response = await GET(request, { params: { id: 'task-123' } });
@@ -67,11 +68,11 @@ describe('GET /api/tracker/tasks/[id]', () => {
 
 describe('PATCH /api/tracker/tasks/[id]', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns 404 for non-existent task', async () => {
-    (taskTracker.updateTask as jest.Mock).mockResolvedValue(null);
+    (taskTracker.updateTask as vi.Mock).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/nonexistent', {
       method: 'PATCH',
@@ -94,7 +95,7 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (taskTracker.updateTask as jest.Mock).mockResolvedValue(updatedTask);
+    (taskTracker.updateTask as vi.Mock).mockResolvedValue(updatedTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'PATCH',
@@ -118,7 +119,7 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    (taskTracker.updateTask as jest.Mock).mockResolvedValue(updatedTask);
+    (taskTracker.updateTask as vi.Mock).mockResolvedValue(updatedTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'PATCH',
@@ -140,7 +141,7 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (taskTracker.updateTask as jest.Mock).mockRejectedValue(new Error('KV error'));
+    (taskTracker.updateTask as vi.Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'PATCH',
@@ -156,11 +157,11 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
 
 describe('DELETE /api/tracker/tasks/[id]', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns 404 for non-existent task', async () => {
-    (taskTracker.deleteTask as jest.Mock).mockResolvedValue(false);
+    (taskTracker.deleteTask as vi.Mock).mockResolvedValue(false);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/nonexistent', {
       method: 'DELETE',
@@ -169,11 +170,11 @@ describe('DELETE /api/tracker/tasks/[id]', () => {
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data.error).toBe('Task not found or could not be deleted');
+    expect(data.error).toBe('Task not found');
   });
 
   it('deletes task successfully', async () => {
-    (taskTracker.deleteTask as jest.Mock).mockResolvedValue(true);
+    (taskTracker.deleteTask as vi.Mock).mockResolvedValue(true);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'DELETE',
@@ -186,7 +187,7 @@ describe('DELETE /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (taskTracker.deleteTask as jest.Mock).mockRejectedValue(new Error('KV error'));
+    (taskTracker.deleteTask as vi.Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'DELETE',

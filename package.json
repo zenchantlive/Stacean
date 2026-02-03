@@ -7,9 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "bd:sync": "npx tsx scripts/sync-beads-to-kv.ts",
     "bd:watch": "npx tsx scripts/beads-kv-watch.ts",
-    "bdx": "./scripts/bdx"
+    "bdx": "./scripts/bdx",
+    "stacean:poller": "npx tsx scripts/stacean-gateway-poller.ts",
+    "stacean:test-e2e": "npx tsx scripts/test-stacean-e2e.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.0.1",
@@ -31,6 +35,8 @@
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "10.4.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
     "postcss": "8.4.0",
     "tailwindcss": "3.4.0",
     "typescript": "5.3.3",

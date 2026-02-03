@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    if (!body.title) {
+    if (!body.title || !String(body.title).trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
