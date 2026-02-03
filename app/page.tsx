@@ -610,7 +610,7 @@ export default function Home() {
         .section-right { display: flex; align-items: center; gap: 0.5rem; color: #A1A1AA; }
         .section-body { padding: 0.75rem 0.25rem; }
 
-        .kanban { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 0.75rem; }
+        .kanban { display: grid; grid-template-columns: repeat(5, 260px); gap: 0.75rem; justify-content: center; }
         .task-col { display: flex; flex-direction: column; gap: 0.75rem; }
         .task-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 0.9rem; }
         .task-card h4 { color: white; font-size: 0.85rem; font-weight: 600; }
@@ -654,13 +654,13 @@ export default function Home() {
         .icon-btn { background: rgba(255,255,255,0.05); border: 0; border-radius: 8px; padding: 0.35rem; color: white; }
 
         @media (max-width: 1400px) {
-          .kanban { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+          .kanban { grid-template-columns: repeat(3, 260px); }
         }
         @media (max-width: 1100px) {
-          .kanban { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+          .kanban { grid-template-columns: repeat(2, 260px); }
         }
         @media (max-width: 900px) {
-          .kanban { grid-template-columns: 1fr; }
+          .kanban { grid-template-columns: 260px; }
         }
         @media (max-width: 768px) {
           .sidebar { display: none; }
