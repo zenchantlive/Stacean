@@ -1,77 +1,49 @@
-import { NextResponse } from 'next/server';
-import { staceanChat } from '@/lib/integrations/kv/chat';
+import { NextRequest, NextResponse } from 'next/server';
+import { staceanChat, ChatMessage } from '@/lib/integrations/kv/chat';
+
+const STACEAN_SECRET = process.env.STACEAN_SECRET || 'stacean-dev-secret-123';
 
 /**
  * GET /api/stacean/sync
- * Gateway polls this to get new messages from User to Agent
+ * Used by the Gateway to pull pending messages from User -> Agent.
  */
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const since = searchParams.get('since') || undefined;
-  const secret = request.headers.get('Authorization')?.replace('Bearer ', '');
-
-  // Auth check
-  if (secret !== process.env.STACEAN_SECRET && process.env.NODE_ENV === 'production') {
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('Authorization');
+  if (authHeader !== `Bearer ${STACEAN_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const allMessages = await staceanChat.getMessages(since);
-    
-    // Gateway only cares about 'outbound' (User -> Agent) messages for sync
-    // But we might want to send everything to keep history in sync if needed.
-    // However, the PRD says sync retrieves "pending messages from the User to the Agent".
-    const userMessages = allMessages.filter(m => m.direction === 'outbound');
+    const { searchParams } = new URL(req.url);
+    const since = searchParams.get('since');
 
-    return NextResponse.json({
-      cursor: allMessages.length > 0 ? allMessages[allMessages.length - 1].id : since,
-      messages: userMessages.map(m => ({
-        id: m.id,
-        from: 'user',
-        text: m.text,
-        createdAt: m.createdAt,
-        media: m.media || []
-      }))
-    });
-  } catch (error) {
-    console.error('Sync error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+    // Fetch recent history and apply since filtering here for dev/mock compatibility
+    const recentMessages = await staceanChat.getLatestMessages(200);
+    let allMessages = recentMessages;
 
-/**
- * POST /api/stacean/sync
- * Gateway calls this to push Agent -> User messages (Inject)
- */
-export async function POST(request: Request) {
-  const secret = request.headers.get('Authorization')?.replace('Bearer ', '');
-
-  // Auth check
-  if (secret !== process.env.STACEAN_SECRET && process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-    const { text, media } = body;
-
-    if (!text) {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+    if (since) {
+      const sinceIndex = recentMessages.findIndex(m => m.id === since);
+      if (sinceIndex >= 0) {
+        allMessages = recentMessages.slice(sinceIndex + 1);
+      } else {
+        const sinceTs = Date.parse(since);
+        if (!isNaN(sinceTs)) {
+          allMessages = recentMessages.filter(m => Date.parse(m.createdAt) > sinceTs);
+        }
+      }
     }
 
-    const message = await staceanChat.addMessage({
-      direction: 'inbound', // Agent -> User
-      text,
-      from: 'agent',
-      media: media || []
-    });
+    // Filter only outbound (User -> Agent) messages for the gateway to process
+    const outboundMessages = allMessages.filter(m => m.direction === 'outbound');
+
+    const lastMsg = recentMessages[recentMessages.length - 1];
 
     return NextResponse.json({
-      success: true,
-      id: message.id
+      cursor: lastMsg ? lastMsg.id : since,
+      messages: outboundMessages,
     });
   } catch (error) {
-    console.error('Injection error:', error);
+    console.error('Sync GET error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

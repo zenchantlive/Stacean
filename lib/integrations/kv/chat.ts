@@ -74,7 +74,7 @@ export class ChatAdapter extends KVAdapter {
     }
 
     // Get message IDs from sorted set
-    const ids = await kv.zrange<string[]>(timelineKey, minScore, '+inf', { byScore: true });
+    const ids = await kv.zrange(timelineKey, minScore, '+inf', { byScore: true }) as string[];
     
     if (!ids || ids.length === 0) return [];
 
@@ -92,7 +92,7 @@ export class ChatAdapter extends KVAdapter {
     const timelineKey = this.key('timeline');
     
     // Get latest IDs
-    const ids = await kv.zrange<string[]>(timelineKey, 0, -1, { rev: true, count: limit, offset: 0 });
+    const ids = await kv.zrange(timelineKey, 0, -1, { rev: true, count: limit, offset: 0 }) as string[];
     
     if (!ids || ids.length === 0) return [];
 
