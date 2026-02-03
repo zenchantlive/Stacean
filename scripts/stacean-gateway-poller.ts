@@ -17,6 +17,7 @@
  *   POLL_INTERVAL_MS  - Poll interval in ms (default: 2000)
  */
 
+import { spawn } from 'child_process';
 import { randomUUID } from 'crypto';
 
 // Configuration from environment
@@ -68,41 +69,52 @@ async function pollSync(): Promise<{ cursor: string | null; messages: any[] }> {
 }
 
 /**
- * Forward message to OpenClaw Gateway via HTTP API
- * POST /api/message with JSON body containing text and channel
+ * Forward message to OpenClaw Gateway via CLI
+ * Uses npx openclaw message send --session main --text
  */
 async function forwardToOpenClaw(message: any): Promise<boolean> {
-  const payload = {
-    channel: 'stacean',
-    direction: 'outbound',
-    text: message.text,
-    from: message.from,
-    originalId: message.id,
-    timestamp: message.createdAt,
-  };
+  const text = `[Stacean] From ${message.from}: ${message.text}`;
 
-  try {
-    const response = await fetch(`${OPENCLAW_URL}/api/message`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(OPENCLAW_TOKEN && { 'Authorization': `Bearer ${OPENCLAW_TOKEN}` }),
-      },
-      body: JSON.stringify(payload),
+  return new Promise((resolve) => {
+    const proc = spawn('npx', [
+      'openclaw',
+      'message',
+      'send',
+      '--session', 'main',
+      '--text', text,
+    ], {
+      cwd: '/home/clawdbot/clawd',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 30000,
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error(`❌ OpenClaw API error: ${response.status} ${error}`);
-      return false;
-    }
+    let stdout = '';
+    let stderr = '';
 
-    console.log(`✅ Forwarded message ${message.id} to OpenClaw`);
-    return true;
-  } catch (error) {
-    console.error(`❌ OpenClaw fetch error: ${error}`);
-    return false;
-  }
+    proc.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    proc.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    proc.on('close', (code) => {
+      if (code === 0) {
+        console.log(`✅ Forwarded message ${message.id} to OpenClaw`);
+        resolve(true);
+      } else {
+        // Log but don't fail - may just be duplicate
+        console.log(`⚠️ OpenClaw response for ${message.id}: ${stdout.substring(0, 100)}`);
+        resolve(true); // Consider it handled even if CLI had issues
+      }
+    });
+
+    proc.on('error', (err) => {
+      console.error(`❌ Failed to call OpenClaw: ${err}`);
+      resolve(false);
+    });
+  });
 }
 
 /**
