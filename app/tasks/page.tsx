@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckSquare, FileText, BookOpen, Activity, Plus, Search, Filter } from "lucide-react";
+import { CheckSquare, FileText, BookOpen, Activity, Plus, Search, Filter, MessageSquare } from "lucide-react";
 import { Task, TaskStatus, TaskPriority } from "@/lib/types/tracker";
+import ChatTab from "@/components/chat/ChatTab";
 
 interface AgentSession {
   id: string;
@@ -13,7 +14,7 @@ interface AgentSession {
   currentAction?: string;
 }
 
-type TabType = "tasks" | "projects" | "notes" | "ledger";
+type TabType = "tasks" | "projects" | "notes" | "ledger" | "chat";
 
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<TabType>("tasks");
@@ -280,6 +281,7 @@ export default function TasksPage() {
             { id: "projects" as TabType, icon: FileText, label: "Projects", count: 3 },
             { id: "notes" as TabType, icon: BookOpen, label: "Notes", count: 0 },
             { id: "ledger" as TabType, icon: Activity, label: "Ledger", count: 4 },
+            { id: "chat" as TabType, icon: MessageSquare, label: "Chat", count: 0 },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -311,6 +313,7 @@ export default function TasksPage() {
         {activeTab === "projects" && renderProjectsTab()}
         {activeTab === "notes" && renderNotesTab()}
         {activeTab === "ledger" && renderLedgerTab()}
+        {activeTab === "chat" && <ChatTab />}
       </main>
 
       {/* Create Task Sheet */}

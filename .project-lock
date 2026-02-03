@@ -1,6 +1,7 @@
 # STACEAN PROJECT LOCK
 # Jordan's command center dashboard
 
+NAME: stacean-repo
 ROOT: /home/clawdbot/stacean-repo
 
 IGNORE:
