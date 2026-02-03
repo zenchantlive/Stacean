@@ -98,47 +98,18 @@ function CollapsibleSection({
   );
 }
 
-function ObjectivesView({
-  tasks,
-  isMobile,
-  mobileStatus,
-  onMobileStatusChange,
-}: {
-  tasks: Task[];
-  isMobile: boolean;
-  mobileStatus: Task["status"];
-  onMobileStatusChange: (status: Task["status"]) => void;
-}) {
+function ObjectivesView({ tasks }: { tasks: Task[] }) {
   const columns = [
     { id: "todo", label: "📝 Todo", color: "#F97316" },
     { id: "active", label: "🔨 Active", color: "#3B82F6" },
     { id: "needs-you", label: "👤 Needs You", color: "#8B5CF6" },
     { id: "ready", label: "📦 Ready", color: "#F59E0B" },
     { id: "shipped", label: "✅ Shipped", color: "#22C55E" },
-  ] as const;
+  ];
 
   return (
     <div className="kanban">
-      {isMobile && (
-        <div className="mobile-status-tabs">
-          {columns.map((col) => {
-            const count = tasks.filter((t) => t.status === col.id).length;
-            const active = mobileStatus === col.id;
-            return (
-              <button
-                key={col.id}
-                className={`mobile-status-tab ${active ? "active" : ""}`}
-                onClick={() => onMobileStatusChange(col.id)}
-                style={active ? { borderColor: col.color, color: col.color } : undefined}
-              >
-                {col.label.replace(/^[^ ]+\s/, "")}
-                <span className="tab-count">{count}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {columns.filter((col) => !isMobile || col.id === mobileStatus).map((col) => {
+      {columns.map((col) => {
         const colTasks = tasks.filter((t) => t.status === col.id);
         return (
           <CollapsibleSection
@@ -474,17 +445,6 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileStatus, setMobileStatus] = useState<Task["status"]>("active");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const media = window.matchMedia("(max-width: 768px)");
-    const handle = () => setIsMobile(media.matches);
-    handle();
-    media.addEventListener?.("change", handle);
-    return () => media.removeEventListener?.("change", handle);
-  }, []);
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -556,14 +516,7 @@ export default function Home() {
   const renderView = () => {
     switch (view) {
       case "stack":
-        return (
-          <ObjectivesView
-            tasks={tasks}
-            isMobile={isMobile}
-            mobileStatus={mobileStatus}
-            onMobileStatusChange={setMobileStatus}
-          />
-        );
+        return <ObjectivesView tasks={tasks} />;
       case "lens":
         return (
           <AgentsView agents={useDerivedAgents ? derivedAgents : agents} derived={useDerivedAgents} tasks={tasks} />
@@ -575,14 +528,7 @@ export default function Home() {
           <LiveView agents={useDerivedAgents ? derivedAgents : agents} tasks={tasks} derived={useDerivedAgents} />
         );
       default:
-        return (
-          <ObjectivesView
-            tasks={tasks}
-            isMobile={isMobile}
-            mobileStatus={mobileStatus}
-            onMobileStatusChange={setMobileStatus}
-          />
-        );
+        return <ObjectivesView tasks={tasks} />;
     }
   };
 
@@ -698,23 +644,23 @@ export default function Home() {
             
             {/* Pipeline Stats Header */}
             <div className="pipeline-stats">
-              <button className="stat-box" onClick={() => { setView("stack"); setMobileStatus("todo"); }}>
+              <button className="stat-box" onClick={() => setView("stack")}>
                 <span className="stat-count" style={{ color: "#F97316" }}>{tasks.filter(t => t.status === 'todo').length}</span>
                 <span className="stat-label">Todo</span>
               </button>
-              <button className="stat-box" onClick={() => { setView("stack"); setMobileStatus("active"); }}>
+              <button className="stat-box" onClick={() => setView("stack")}>
                 <span className="stat-count" style={{ color: "#3B82F6" }}>{tasks.filter(t => t.status === 'active').length}</span>
                 <span className="stat-label">Active</span>
               </button>
-              <button className="stat-box urgent" onClick={() => { setView("stack"); setMobileStatus("needs-you"); }}>
+              <button className="stat-box urgent" onClick={() => setView("stack")}>
                 <span className="stat-count" style={{ color: "#8B5CF6" }}>{tasks.filter(t => t.status === 'needs-you').length}</span>
                 <span className="stat-label">Needs You</span>
               </button>
-              <button className="stat-box" onClick={() => { setView("stack"); setMobileStatus("ready"); }}>
+              <button className="stat-box" onClick={() => setView("stack")}>
                 <span className="stat-count" style={{ color: "#F59E0B" }}>{tasks.filter(t => t.status === 'ready').length}</span>
                 <span className="stat-label">Ready</span>
               </button>
-              <button className="stat-box" onClick={() => { setView("stack"); setMobileStatus("shipped"); }}>
+              <button className="stat-box" onClick={() => setView("stack")}>
                 <span className="stat-count" style={{ color: "#22C55E" }}>{tasks.filter(t => t.status === 'shipped').length}</span>
                 <span className="stat-label">Shipped</span>
               </button>
@@ -794,7 +740,6 @@ export default function Home() {
         .section-body { padding: 0.75rem 0.25rem; }
 
         .kanban { display: grid; grid-template-columns: repeat(5, 260px); gap: 0.75rem; justify-content: center; }
-        .mobile-status-tabs { display: none; }
         .task-col { display: flex; flex-direction: column; gap: 0.75rem; }
         .task-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 0.9rem; }
         .task-card h4 { color: white; font-size: 0.85rem; font-weight: 600; }
@@ -881,55 +826,28 @@ export default function Home() {
           .content-inner { max-width: 100%; }
           
           /* Compact pipeline stats */
-          .pipeline-stats { display: none; }
+          .app { font-size: clamp(12px, 3.4vw, 15px); }
+          .pipeline-stats { 
+            display: grid; 
+            grid-template-columns: repeat(3, minmax(0, 1fr)); 
+            gap: 0.4rem; 
+            margin: 0.5rem 0; 
+            width: 100%;
+          }
           .stat-box { 
-            padding: 0.35rem 0.25rem; 
+            padding: 0.4rem 0.3rem; 
             border-radius: 8px;
             min-height: auto;
             min-width: 0;
-            align-items: flex-start;
           }
-          .stat-count { font-size: 0.85rem; }
-          .stat-label { font-size: 0.52rem; line-height: 1.1; }
+          .stat-count { font-size: 0.9rem; }
+          .stat-label { font-size: 0.55rem; line-height: 1.1; }
           
           /* Compact view header */
           .view-header { margin-top: 0.75rem; margin-bottom: 0.5rem; }
           .view-header h2 { font-size: 1.1rem; margin-bottom: 0.1rem; }
           .view-header p { font-size: 0.7rem; }
 
-          /* Mobile status tabs (single column view) */
-          .mobile-status-tabs {
-            display: flex;
-            gap: 0.35rem;
-            overflow-x: auto;
-            padding-bottom: 0.35rem;
-            margin: 0.25rem 0 0.5rem;
-            scrollbar-width: none;
-          }
-          .mobile-status-tabs::-webkit-scrollbar { display: none; }
-          .mobile-status-tab {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.3rem 0.5rem;
-            border-radius: 999px;
-            border: 1px solid rgba(255,255,255,0.12);
-            background: rgba(255,255,255,0.03);
-            color: #A1A1AA;
-            font-size: 0.65rem;
-            white-space: nowrap;
-          }
-          .mobile-status-tab.active {
-            background: rgba(255,255,255,0.06);
-            border-color: rgba(249,115,22,0.6);
-          }
-          .tab-count {
-            background: rgba(255,255,255,0.1);
-            padding: 0.1rem 0.35rem;
-            border-radius: 999px;
-            font-size: 0.6rem;
-          }
-          
           /* Compact banner */
           .banner { 
             margin-top: 0.25rem; 
