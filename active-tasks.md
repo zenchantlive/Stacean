@@ -42,15 +42,30 @@
 ### 2) **Agent Workflow Status Rules (Now)**
 - Update docs/TASK_WORKFLOW.md with new statuses + rules.
 
-### 3) **Desktop Layout Re‑invention (DONE)**
+### 3) **Desktop Layout Re‑invention (IN PROGRESS)**
 - Added max-width content wrapper + constrained kanban columns
 - Sidebar collapsed by default
 - Responsive kanban columns (5 → 3 → 2 → 1)
+- Fixed widescreen: centered columns with fixed widths (260px)
+- **TODO:** Fix remaining widescreen spacing issues
 
-### 4) **Mobile Ergonomics + Less Scrolling**
+### 4) **UI View Redesigns (DONE)**
+- **Test beads created:** clawd-a74 (active), clawd-wo5 (needs-you), clawd-q22 (ready), clawd-x9n (shipped)
+- **Agents view (Option B):** Agent-centric cards showing:
+  - Currently doing (active task)
+  - Needs Your Review (tasks waiting for Jordan)
+  - Recently Shipped (last 3 completed)
+  - Full status breakdown with colored pills
+- **Live view (Option C):** Time-based activity feed with sections:
+  - Today / Yesterday / Earlier This Week / Older
+  - Relative timestamps ("2m ago", "3h ago")
+  - Agent activity + task status changes
+- **Widescreen fix:** Centered content, better spatial hierarchy
+
+### 5) **Mobile Ergonomics + Less Scrolling**
 - Tighten spacing and improve ergonomic layout.
 
-### 5) **OpenClaw In‑App Chat (Future/Brainstorm)**
+### 6) **OpenClaw In‑App Chat (Future/Brainstorm)**
 - Big item for later — needs separate planning session.
 
 ---
