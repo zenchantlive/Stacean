@@ -48,12 +48,12 @@ function loadEnv() {
 // Load env vars before any other imports
 loadEnv();
 
-// Types matching the Beads issue format
+// Types matching the Beads issue format (includes custom workflow statuses)
 interface BeadsIssue {
   id: string;
   title: string;
   description?: string;
-  status: 'open' | 'in_progress' | 'done' | 'blocked' | 'closed';
+  status: 'open' | 'in_progress' | 'done' | 'blocked' | 'closed' | 'agent_working' | 'needs_jordan' | 'changes_requested' | 'ready_to_commit' | 'pushed';
   priority: number;
   issue_type: string;
   assignee?: string;
@@ -66,13 +66,18 @@ interface BeadsIssue {
 // Priority mapping: Beads (0=urgent, 3=low) → KV (urgent, high, medium, low)
 const BEADS_PRIORITY_MAP = ['urgent', 'high', 'medium', 'low'];
 
-// Status mapping: Beads → KV
+// Status mapping: Beads → KV (5-stage workflow)
 const BEADS_STATUS_MAP: Record<BeadsIssue['status'], string> = {
   'open': 'todo',
-  'in_progress': 'in-progress',
-  'done': 'done',
-  'blocked': 'in-progress',
-  'closed': 'done',
+  'in_progress': 'active',
+  'done': 'shipped',
+  'blocked': 'active',
+  'closed': 'shipped',
+  'agent_working': 'active',
+  'needs_jordan': 'needs-you',
+  'changes_requested': 'active',
+  'ready_to_commit': 'ready',
+  'pushed': 'shipped',
 };
 
 /**
