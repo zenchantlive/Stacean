@@ -821,27 +821,31 @@ export default function Home() {
         }
         @media (max-width: 768px) {
           .sidebar { display: none; }
-          .main { margin-left: 0; padding: 0.5rem; padding-bottom: 4.5rem; }
+          .main { margin-left: 0; padding: 0.5rem; padding-bottom: 4.5rem; padding-top: 3.75rem; }
           .content-wrapper { max-width: 100%; align-items: stretch; }
           .content-inner { max-width: 100%; }
           
           /* Compact pipeline stats */
           .pipeline-stats { 
             display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
+            grid-template-columns: repeat(3, minmax(0, 1fr)); 
+            grid-auto-flow: row dense;
             gap: 0.35rem; 
             margin: 0.5rem 0;
+            width: 100%;
           }
           .stat-box { 
-            padding: 0.4rem 0.3rem; 
+            padding: 0.35rem 0.25rem; 
             border-radius: 8px;
             min-height: auto;
+            min-width: 0;
+            align-items: flex-start;
           }
-          .stat-count { font-size: 0.9rem; }
-          .stat-label { font-size: 0.55rem; }
+          .stat-count { font-size: 0.85rem; }
+          .stat-label { font-size: 0.52rem; line-height: 1.1; }
           
           /* Compact view header */
-          .view-header { margin-top: 3.5rem; margin-bottom: 0.5rem; }
+          .view-header { margin-top: 0.75rem; margin-bottom: 0.5rem; }
           .view-header h2 { font-size: 1.1rem; margin-bottom: 0.1rem; }
           .view-header p { font-size: 0.7rem; }
           
