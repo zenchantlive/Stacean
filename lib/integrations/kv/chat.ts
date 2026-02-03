@@ -55,7 +55,7 @@ export class ChatAdapter extends KVAdapter {
    * Get messages since a certain timestamp/ID
    */
   async getMessages(since?: string): Promise<ChatMessage[]> {
-    const timelineKey = 'timeline'; // Already handled by this.key() in get/set
+    const timelineKey = this.key('timeline');
     let minScore = 0;
 
     if (since) {

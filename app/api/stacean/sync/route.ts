@@ -23,9 +23,10 @@ export async function GET(req: NextRequest) {
     // Filter only outbound (User -> Agent) messages
     const outboundMessages = allMessages.filter(m => m.direction === 'outbound');
 
-    // Get the last message for cursor (newest message overall)
-    const messages = await staceanChat.getLatestMessages(1);
-    const cursor = messages.length > 0 ? messages[0].id : since;
+    // Get the newest message ID for cursor
+    // Since messages are sorted oldest-first, take the last one
+    const newestMessage = allMessages.length > 0 ? allMessages[allMessages.length - 1] : null;
+    const cursor = newestMessage ? newestMessage.id : (since || '');
 
     return NextResponse.json({
       cursor,
