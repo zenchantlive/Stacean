@@ -318,7 +318,7 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -504,45 +504,47 @@ export default function Home() {
       {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)} />}
 
       <main className={`main ${sidebarCollapsed ? "wide" : ""}`}>
-        {currentTask && (
-          <div className="banner">
-            <div className="banner-dot" />
-            <div>
-              <div className="banner-label">Atlas Activity</div>
-              <div className="banner-text">{currentTask}</div>
+        <div className="content-wrapper">
+          {currentTask && (
+            <div className="banner">
+              <div className="banner-dot" />
+              <div>
+                <div className="banner-label">Atlas Activity</div>
+                <div className="banner-text">{currentTask}</div>
+              </div>
             </div>
+          )}
+          
+          {/* Pipeline Stats Header */}
+          <div className="pipeline-stats">
+            <button className="stat-box" onClick={() => setView("stack")}>
+              <span className="stat-count" style={{ color: "#F97316" }}>{tasks.filter(t => t.status === 'todo').length}</span>
+              <span className="stat-label">Todo</span>
+            </button>
+            <button className="stat-box" onClick={() => setView("stack")}>
+              <span className="stat-count" style={{ color: "#3B82F6" }}>{tasks.filter(t => t.status === 'active').length}</span>
+              <span className="stat-label">Active</span>
+            </button>
+            <button className="stat-box urgent" onClick={() => setView("stack")}>
+              <span className="stat-count" style={{ color: "#8B5CF6" }}>{tasks.filter(t => t.status === 'needs-you').length}</span>
+              <span className="stat-label">Needs You</span>
+            </button>
+            <button className="stat-box" onClick={() => setView("stack")}>
+              <span className="stat-count" style={{ color: "#F59E0B" }}>{tasks.filter(t => t.status === 'ready').length}</span>
+              <span className="stat-label">Ready</span>
+            </button>
+            <button className="stat-box" onClick={() => setView("stack")}>
+              <span className="stat-count" style={{ color: "#22C55E" }}>{tasks.filter(t => t.status === 'shipped').length}</span>
+              <span className="stat-label">Shipped</span>
+            </button>
           </div>
-        )}
-        
-        {/* Pipeline Stats Header */}
-        <div className="pipeline-stats">
-          <button className="stat-box" onClick={() => setView("stack")}>
-            <span className="stat-count" style={{ color: "#F97316" }}>{tasks.filter(t => t.status === 'todo').length}</span>
-            <span className="stat-label">Todo</span>
-          </button>
-          <button className="stat-box" onClick={() => setView("stack")}>
-            <span className="stat-count" style={{ color: "#3B82F6" }}>{tasks.filter(t => t.status === 'active').length}</span>
-            <span className="stat-label">Active</span>
-          </button>
-          <button className="stat-box urgent" onClick={() => setView("stack")}>
-            <span className="stat-count" style={{ color: "#8B5CF6" }}>{tasks.filter(t => t.status === 'needs-you').length}</span>
-            <span className="stat-label">Needs You</span>
-          </button>
-          <button className="stat-box" onClick={() => setView("stack")}>
-            <span className="stat-count" style={{ color: "#F59E0B" }}>{tasks.filter(t => t.status === 'ready').length}</span>
-            <span className="stat-label">Ready</span>
-          </button>
-          <button className="stat-box" onClick={() => setView("stack")}>
-            <span className="stat-count" style={{ color: "#22C55E" }}>{tasks.filter(t => t.status === 'shipped').length}</span>
-            <span className="stat-label">Shipped</span>
-          </button>
-        </div>
 
-        <div className="view-header">
-          <h2>{navItems.find((i) => i.id === view)?.label}</h2>
-          <p>{navItems.find((i) => i.id === view)?.desc}</p>
+          <div className="view-header">
+            <h2>{navItems.find((i) => i.id === view)?.label}</h2>
+            <p>{navItems.find((i) => i.id === view)?.desc}</p>
+          </div>
+          {renderView()}
         </div>
-        {renderView()}
       </main>
 
       <nav className="mobile-nav">
@@ -583,8 +585,9 @@ export default function Home() {
         .status-title { color: white; font-weight: 600; font-size: 0.8rem; }
         .status-desc { color: #71717A; font-size: 0.7rem; }
 
-        .main { margin-left: 260px; padding: 2rem; min-height: 100vh; }
+        .main { margin-left: 260px; padding: 1.5rem; min-height: 100vh; max-width: 1600px; }
         .main.wide { margin-left: 72px; }
+        .content-wrapper { max-width: 1400px; margin: 0 auto; }
         .banner { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: 12px; background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.25); margin-bottom: 1.5rem; }
         .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: #F97316; animation: pulse 2s infinite; }
         .banner-label { color: #F97316; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
@@ -607,7 +610,7 @@ export default function Home() {
         .section-right { display: flex; align-items: center; gap: 0.5rem; color: #A1A1AA; }
         .section-body { padding: 0.75rem 0.25rem; }
 
-        .kanban { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+        .kanban { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 0.75rem; }
         .task-col { display: flex; flex-direction: column; gap: 0.75rem; }
         .task-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 0.9rem; }
         .task-card h4 { color: white; font-size: 0.85rem; font-weight: 600; }
@@ -650,9 +653,19 @@ export default function Home() {
         .mobile-header, .mobile-nav, .mobile-sidebar, .overlay { display: none; }
         .icon-btn { background: rgba(255,255,255,0.05); border: 0; border-radius: 8px; padding: 0.35rem; color: white; }
 
+        @media (max-width: 1400px) {
+          .kanban { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+        }
+        @media (max-width: 1100px) {
+          .kanban { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+        }
+        @media (max-width: 900px) {
+          .kanban { grid-template-columns: 1fr; }
+        }
         @media (max-width: 768px) {
           .sidebar { display: none; }
           .main { margin-left: 0; padding: 1rem; padding-bottom: 6rem; }
+          .content-wrapper { max-width: 100%; }
           .mobile-header { display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px; align-items: center; justify-content: space-between; padding: 0 1rem; background: rgba(24,24,27,0.95); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 60; }
           .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(24,24,27,0.95); border-top: 1px solid rgba(255,255,255,0.05); padding: 0.6rem 0.8rem 1rem; justify-content: space-around; z-index: 60; }
           .mobile-item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; color: #71717A; background: none; border: 0; }
