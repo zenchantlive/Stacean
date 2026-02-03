@@ -821,123 +821,27 @@ export default function Home() {
         }
         @media (max-width: 768px) {
           .sidebar { display: none; }
-          .main { margin-left: 0; padding: 0.5rem; padding-bottom: 4.5rem; padding-top: 3.75rem; }
+          .main { margin-left: 0; padding: 0.75rem; padding-bottom: 5rem; }
           .content-wrapper { max-width: 100%; align-items: stretch; }
           .content-inner { max-width: 100%; }
-          
-          /* Compact pipeline stats */
-          .app { font-size: clamp(12px, 3.4vw, 15px); }
-          .pipeline-stats { 
-            display: grid; 
-            grid-template-columns: repeat(3, minmax(0, 1fr)); 
-            gap: 0.4rem; 
-            margin: 0.5rem 0; 
-            width: 100%;
-          }
-          .stat-box { 
-            padding: 0.4rem 0.3rem; 
-            border-radius: 8px;
-            min-height: auto;
-            min-width: 0;
-          }
-          .stat-count { font-size: 0.9rem; }
-          .stat-label { font-size: 0.55rem; line-height: 1.1; }
-          
-          /* Compact view header */
-          .view-header { margin-top: 0.75rem; margin-bottom: 0.5rem; }
-          .view-header h2 { font-size: 1.1rem; margin-bottom: 0.1rem; }
-          .view-header p { font-size: 0.7rem; }
-
-          /* Compact banner */
-          .banner { 
-            margin-top: 0.25rem; 
-            margin-bottom: 0.75rem;
-            padding: 0.5rem 0.75rem;
-          }
-          .banner-text { font-size: 0.8rem; }
-          
-          /* Compact kanban */
-          .kanban { display: flex; flex-direction: column; gap: 0.75rem; }
-          .task-col { width: 100%; gap: 0.5rem; }
-          
-          /* Compact task cards */
-          .task-card { padding: 0.6rem; }
-          .task-card h4 { font-size: 0.8rem; }
-          .task-card p { font-size: 0.7rem; margin-top: 0.25rem; }
-          .badge { font-size: 0.55rem; padding: 0.1rem 0.35rem; }
-          .task-meta { margin-top: 0.4rem; }
-          .agent-tag { font-size: 0.55rem; }
-          
-          /* Compact section headers */
-          .section-header { padding: 0.5rem 0.75rem; }
-          .section-title { font-size: 0.85rem; }
-          
-          /* Compact agents */
-          .agent-grid { grid-template-columns: 1fr; gap: 0.5rem; }
-          .agent-card { padding: 0.6rem; }
-          .agent-name { font-size: 0.85rem; }
-          .agent-section { padding: 0.4rem; margin-bottom: 0.5rem; }
-          .agent-section-title { font-size: 0.6rem; }
-          .agent-task-highlight { font-size: 0.75rem; padding: 0.35rem; }
-          .agent-task-item { font-size: 0.7rem; padding: 0.15rem 0; }
-          .meta-pill { font-size: 0.55rem; padding: 0.1rem 0.35rem; }
-          
-          /* Compact mobile nav */
-          .mobile-header { 
-            display: flex; 
-            position: fixed; 
-            top: 0; left: 0; right: 0; 
-            height: 48px; 
-            align-items: center; 
-            justify-content: space-between; 
-            padding: 0 0.5rem; 
-            background: rgba(24,24,27,0.98); 
-            border-bottom: 1px solid rgba(255,255,255,0.05); 
-            z-index: 60; 
-          }
-          .mobile-nav { 
-            display: flex; 
-            position: fixed; 
-            bottom: 0; left: 0; right: 0; 
-            background: rgba(24,24,27,0.98); 
-            border-top: 1px solid rgba(255,255,255,0.05); 
-            padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom)); 
-            justify-content: space-around; 
-            z-index: 60; 
-            height: auto;
-            min-height: 56px;
-          }
-          .mobile-item { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 0.15rem; 
-            color: #71717A; 
-            background: none; 
-            border: 0; 
-            font-size: 0.6rem; 
-            padding: 0.2rem 0.4rem;
-          }
-          .mobile-item svg { width: 16px; height: 16px; }
+          .pipeline-stats { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+          .stat-box { padding: 0.6rem; }
+          .stat-count { font-size: 1.1rem; }
+          .kanban { display: flex; flex-direction: column; gap: 1rem; }
+          .task-col { width: 100%; }
+          .agent-grid { grid-template-columns: 1fr; }
+          .mobile-header { display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px; align-items: center; justify-content: space-between; padding: 0 0.75rem; background: rgba(24,24,27,0.95); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 60; }
+          .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(24,24,27,0.95); border-top: 1px solid rgba(255,255,255,0.05); padding: 0.5rem 0.5rem 1rem; justify-content: space-around; z-index: 60; }
+          .mobile-item { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; color: #71717A; background: none; border: 0; font-size: 0.7rem; }
           .mobile-item.active { color: #F97316; }
-          
           .mobile-sidebar { display: block; position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #18181B; padding: 1rem; transform: translateX(-100%); transition: transform 0.2s ease; z-index: 70; }
           .mobile-sidebar.open { transform: translateX(0); }
           .mobile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; color: white; }
           .overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 65; }
-          
-          /* Compact energy view */
-          .energy-band { padding: 0.5rem; }
-          .energy-chip { padding: 0.3rem 0.5rem; font-size: 0.7rem; }
-          
-          /* Compact live feed */
-          .feed-group { border-left: none; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem; }
-          .feed-group-header { font-size: 0.6rem; margin-bottom: 0.3rem; }
-          .feed-item { padding: 0.5rem; margin-bottom: 0.3rem; }
-          .feed-item-title { font-size: 0.8rem; }
-          .feed-item-subtitle { font-size: 0.6rem; }
-          .feed-item-desc { font-size: 0.6rem; }
-          .feed-item-time { font-size: 0.55rem; }
+          .view-header { margin-top: 4rem; }
+          .view-header h2 { font-size: 1.25rem; }
+          .banner { margin-top: 0.5rem; }
+          .feed-group { border-left: none; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.75rem; }
         }
 
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
