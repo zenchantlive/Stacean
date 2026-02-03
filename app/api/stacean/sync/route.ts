@@ -17,29 +17,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const since = searchParams.get('since');
 
-    // Fetch recent history and apply since filtering here for dev/mock compatibility
-    const recentMessages = await staceanChat.getLatestMessages(200);
-    let allMessages = recentMessages;
+    // Fetch all recent messages (sorted by time, oldest first)
+    const allMessages = await staceanChat.getMessages(since);
 
-    if (since) {
-      const sinceIndex = recentMessages.findIndex(m => m.id === since);
-      if (sinceIndex >= 0) {
-        allMessages = recentMessages.slice(sinceIndex + 1);
-      } else {
-        const sinceTs = Date.parse(since);
-        if (!isNaN(sinceTs)) {
-          allMessages = recentMessages.filter(m => Date.parse(m.createdAt) > sinceTs);
-        }
-      }
-    }
-
-    // Filter only outbound (User -> Agent) messages for the gateway to process
+    // Filter only outbound (User -> Agent) messages
     const outboundMessages = allMessages.filter(m => m.direction === 'outbound');
 
-    const lastMsg = recentMessages[recentMessages.length - 1];
+    // Get the last message for cursor (newest message overall)
+    const messages = await staceanChat.getLatestMessages(1);
+    const cursor = messages.length > 0 ? messages[0].id : since;
 
     return NextResponse.json({
-      cursor: lastMsg ? lastMsg.id : since,
+      cursor,
       messages: outboundMessages,
     });
   } catch (error) {
