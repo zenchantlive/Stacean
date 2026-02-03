@@ -32,16 +32,23 @@
 
 ## 🔥 Next Issues (Priority Order)
 
-### 1) **Beads Status Migration (Immediate)**
-- Update existing beads from `open` to new workflow statuses where appropriate.
+### 1) **Beads Cleanup + New Beads (Immediate)**
+- Deleted old open/test beads; created fresh beads:
+  - clawd-qan (migration audit, agent_working)
+  - clawd-64f (status rules doc, needs_jordan)
+  - clawd-vb7 (desktop layout reinvention, open)
+  - clawd-mry (mobile ergonomics, open)
 
-### 2) **Desktop Layout Re‑invention**
+### 2) **Agent Workflow Status Rules (Now)**
+- Update docs/TASK_WORKFLOW.md with new statuses + rules.
+
+### 3) **Desktop Layout Re‑invention**
 - Reduce full‑width stretch; use smarter column/grid layout.
 
-### 3) **Mobile Ergonomics + Less Scrolling**
+### 4) **Mobile Ergonomics + Less Scrolling**
 - Tighten spacing and improve ergonomic layout.
 
-### 4) **OpenClaw In‑App Chat (Future/Brainstorm)**
+### 5) **OpenClaw In‑App Chat (Future/Brainstorm)**
 - Big item for later — needs separate planning session.
 
 ---

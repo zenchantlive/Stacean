@@ -1,12 +1,13 @@
 # Task Workflow: Beads → KV Sync
 
-This document describes how to create tasks that appear **instantly on Vercel** without commits.
+This document describes how to create tasks that appear **instantly on Vercel** without commits, and how to use the **5‑stage workflow**.
 
 ## Overview
 
 - **Beads** - Local issue tracker (`.beads/issues.jsonl`)
 - **KV (Upstash)** - Cloud Redis that powers the Vercel UI
 - **Sync** - Automatic via `bdx` wrapper
+- **Workflow** - 5‑stage pipeline in UI
 
 ## Usage
 
@@ -17,7 +18,7 @@ Use **`npm run bdx`** instead of `bd` for any task-modifying command:
 npm run bdx create "Implement feature X" -p 1
 
 # Update a task
-npm run bdx update clawd-abc123 --status in_progress
+npm run bdx update clawd-abc123 --status agent_working
 
 # Close a task (auto-removes from Vercel UI)
 npm run bdx close clawd-abc123 --reason "Done"
@@ -25,6 +26,29 @@ npm run bdx close clawd-abc123 --reason "Done"
 # Delete a task
 npm run bdx delete clawd-abc123
 ```
+
+## 5‑Stage Workflow (UI Columns)
+
+| UI Column | Beads Statuses | When to Use |
+|----------|----------------|-------------|
+| **Todo** | `open` | Not started |
+| **Active** | `agent_working`, `blocked`, `changes_requested` | Work in progress or fixing | 
+| **Needs You** | `needs_jordan` | Ready for Jordan review/decision |
+| **Ready** | `ready_to_commit` | Work complete, needs commit |
+| **Shipped** | `done`, `pushed` | Committed/pushed/verified |
+
+### Custom Statuses Configured
+```
+agent_working, blocked, needs_jordan, changes_requested, ready_to_commit, pushed
+```
+
+### Status Rules for Agents
+- **Start work** → `agent_working`
+- **Blocked** → `blocked`
+- **Needs Jordan** → `needs_jordan`
+- **Jordan requested changes** → `changes_requested`
+- **Ready for commit** → `ready_to_commit`
+- **Pushed to remote** → `pushed`
 
 ## How It Works
 
@@ -45,7 +69,10 @@ Syncs all open beads to Upstash KV
 | Command | Description |
 |---------|-------------|
 | `npm run bdx create "Title" -p 1` | Create + sync |
-| `npm run bdx update <id> --status done` | Update + sync |
+| `npm run bdx update <id> --status agent_working` | Update + sync |
+| `npm run bdx update <id> --status needs_jordan` | Move to Needs You |
+| `npm run bdx update <id> --status ready_to_commit` | Mark Ready |
+| `npm run bdx update <id> --status pushed` | Mark Shipped |
 | `npm run bdx close <id>` | Close + sync |
 | `npm run bd:sync` | Manual sync (all tasks) |
 | `bd list` | List beads (no sync) |
