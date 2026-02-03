@@ -45,9 +45,10 @@ const PRIORITY_COLORS: Record<string, { bg: string; border: string; text: string
 
 const STATUS_COLORS: Record<string, string> = {
   todo: "#F97316",
-  "in-progress": "#3B82F6",
-  review: "#8B5CF6",
-  done: "#22C55E",
+  active: "#3B82F6",
+  "needs-you": "#8B5CF6",
+  ready: "#F59E0B",
+  shipped: "#22C55E",
 };
 
 const formatTime = (timestamp: number | string) => {
@@ -99,10 +100,11 @@ function CollapsibleSection({
 
 function ObjectivesView({ tasks }: { tasks: Task[] }) {
   const columns = [
-    { id: "todo", label: "To Do", color: "#F97316" },
-    { id: "in-progress", label: "In Progress", color: "#3B82F6" },
-    { id: "review", label: "Review", color: "#8B5CF6" },
-    { id: "done", label: "Done", color: "#22C55E" },
+    { id: "todo", label: "📝 Todo", color: "#F97316" },
+    { id: "active", label: "🔨 Active", color: "#3B82F6" },
+    { id: "needs-you", label: "👤 Needs You", color: "#8B5CF6" },
+    { id: "ready", label: "📦 Ready", color: "#F59E0B" },
+    { id: "shipped", label: "✅ Shipped", color: "#22C55E" },
   ];
 
   return (
@@ -153,7 +155,25 @@ function ObjectivesView({ tasks }: { tasks: Task[] }) {
   );
 }
 
-function AgentsView({ agents, derived }: { agents: Agent[]; derived: boolean }) {
+function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: boolean; tasks: Task[] }) {
+  const getStatsForAgent = (agentName: string) => {
+    const items = tasks.filter((t) => t.agentCodeName === agentName);
+    const counts = items.reduce(
+      (acc, task) => {
+        acc[task.status] = (acc[task.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+    return {
+      todo: counts["todo"] || 0,
+      active: counts["active"] || 0,
+      needs: counts["needs-you"] || 0,
+      ready: counts["ready"] || 0,
+      shipped: counts["shipped"] || 0,
+    };
+  };
+
   return (
     <CollapsibleSection
       title={derived ? "Assigned Agents (Derived)" : "Active Agents"}
@@ -166,34 +186,44 @@ function AgentsView({ agents, derived }: { agents: Agent[]; derived: boolean }) 
         {agents.length === 0 ? (
           <div className="empty">No agents active</div>
         ) : (
-          agents.map((agent) => (
-            <div key={agent.id} className="agent-card">
-              <div className="agent-header">
-                <div className="agent-icon">
-                  <Bot size={18} />
+          agents.map((agent) => {
+            const stats = getStatsForAgent(agent.name);
+            return (
+              <div key={agent.id} className="agent-card">
+                <div className="agent-header">
+                  <div className="agent-icon">
+                    <Bot size={18} />
+                  </div>
+                  <div>
+                    <div className="agent-name">{agent.name}</div>
+                    <div className={`agent-status ${agent.status}`}>
+                      <span className="dot" />
+                      {agent.status}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="agent-name">{agent.name}</div>
-                  <div className={`agent-status ${agent.status}`}>
-                    <span className="dot" />
-                    {agent.status}
+                {agent.currentTask && (
+                  <div className="agent-task">
+                    <Target size={14} />
+                    <span>{agent.currentTask}</span>
+                  </div>
+                )}
+                <div className="agent-metadata">
+                  <span className="meta-pill">Todo: {stats.todo}</span>
+                  <span className="meta-pill">Active: {stats.active}</span>
+                  <span className="meta-pill">Needs You: {stats.needs}</span>
+                  <span className="meta-pill">Ready: {stats.ready}</span>
+                  <span className="meta-pill">Shipped: {stats.shipped}</span>
+                </div>
+                <div className="agent-stats">
+                  <div>
+                    <Clock size={12} />
+                    {agent.lastActivity ? formatTime(agent.lastActivity) : "Unknown"}
                   </div>
                 </div>
               </div>
-              {agent.currentTask && (
-                <div className="agent-task">
-                  <Target size={14} />
-                  <span>{agent.currentTask}</span>
-                </div>
-              )}
-              <div className="agent-stats">
-                <div>
-                  <Clock size={12} />
-                  {agent.lastActivity ? formatTime(agent.lastActivity) : "Unknown"}
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </CollapsibleSection>
@@ -221,7 +251,7 @@ function EnergyView({ tasks }: { tasks: Task[] }) {
                 <div className="energy-list">
                   {pTasks.map((task) => (
                     <div key={task.id} className="energy-chip">
-                      <input type="checkbox" readOnly checked={task.status === "done"} />
+                      <input type="checkbox" readOnly checked={task.status === "shipped"} />
                       <span>{task.title}</span>
                     </div>
                   ))}
@@ -363,7 +393,7 @@ export default function Home() {
         return <ObjectivesView tasks={tasks} />;
       case "lens":
         return (
-          <AgentsView agents={useDerivedAgents ? derivedAgents : agents} derived={useDerivedAgents} />
+          <AgentsView agents={useDerivedAgents ? derivedAgents : agents} derived={useDerivedAgents} tasks={tasks} />
         );
       case "energy":
         return <EnergyView tasks={tasks} />;
@@ -483,6 +513,31 @@ export default function Home() {
             </div>
           </div>
         )}
+        
+        {/* Pipeline Stats Header */}
+        <div className="pipeline-stats">
+          <button className="stat-box" onClick={() => setView("stack")}>
+            <span className="stat-count" style={{ color: "#F97316" }}>{tasks.filter(t => t.status === 'todo').length}</span>
+            <span className="stat-label">Todo</span>
+          </button>
+          <button className="stat-box" onClick={() => setView("stack")}>
+            <span className="stat-count" style={{ color: "#3B82F6" }}>{tasks.filter(t => t.status === 'active').length}</span>
+            <span className="stat-label">Active</span>
+          </button>
+          <button className="stat-box urgent" onClick={() => setView("stack")}>
+            <span className="stat-count" style={{ color: "#8B5CF6" }}>{tasks.filter(t => t.status === 'needs-you').length}</span>
+            <span className="stat-label">Needs You</span>
+          </button>
+          <button className="stat-box" onClick={() => setView("stack")}>
+            <span className="stat-count" style={{ color: "#F59E0B" }}>{tasks.filter(t => t.status === 'ready').length}</span>
+            <span className="stat-label">Ready</span>
+          </button>
+          <button className="stat-box" onClick={() => setView("stack")}>
+            <span className="stat-count" style={{ color: "#22C55E" }}>{tasks.filter(t => t.status === 'shipped').length}</span>
+            <span className="stat-label">Shipped</span>
+          </button>
+        </div>
+
         <div className="view-header">
           <h2>{navItems.find((i) => i.id === view)?.label}</h2>
           <p>{navItems.find((i) => i.id === view)?.desc}</p>
@@ -537,6 +592,13 @@ export default function Home() {
         .view-header h2 { color: white; font-size: 1.5rem; margin-bottom: 0.25rem; }
         .view-header p { color: #71717A; font-size: 0.85rem; }
 
+        .pipeline-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.25rem; }
+        .stat-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 0.8rem 0.9rem; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 0.3rem; }
+        .stat-box:hover { border-color: rgba(249,115,22,0.4); }
+        .stat-box.urgent { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.08); }
+        .stat-count { font-size: 1.3rem; font-weight: 700; }
+        .stat-label { color: #A1A1AA; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
         .section { margin-bottom: 1rem; }
         .section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; color: white; cursor: pointer; }
         .section-title { display: flex; align-items: center; gap: 0.5rem; }
@@ -566,6 +628,8 @@ export default function Home() {
         .agent-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #71717A; }
         .agent-status.running .dot { background: #22C55E; box-shadow: 0 0 8px #22C55E; }
         .agent-task { display: flex; align-items: center; gap: 0.4rem; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2); padding: 0.6rem; border-radius: 8px; color: white; font-size: 0.8rem; }
+        .agent-metadata { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
+        .meta-pill { font-size: 0.6rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(255,255,255,0.08); color: #A1A1AA; }
         .agent-stats { display: flex; gap: 0.5rem; margin-top: 0.6rem; color: #71717A; font-size: 0.7rem; }
         .agent-stats div { display: flex; align-items: center; gap: 0.3rem; }
 

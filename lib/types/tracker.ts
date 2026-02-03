@@ -4,7 +4,7 @@
 // Tasks
 // ============================================================================
 
-export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
+export type TaskStatus = 'todo' | 'active' | 'needs-you' | 'ready' | 'shipped';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface TaskContext {

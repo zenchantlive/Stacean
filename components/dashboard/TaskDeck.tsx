@@ -141,10 +141,10 @@ export function TaskDeck({ agent, task, onAction, onTaskUpdate }: TaskDeckProps)
 
            {task && (
              <button 
-               onClick={() => onTaskUpdate(task.id, { status: 'done' })}
+               onClick={() => onTaskUpdate(task.id, { status: 'shipped' })}
                className="flex-1 flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 py-3 rounded-xl transition-colors font-medium text-xs border border-green-500/20"
              >
-               <CheckCircle2 size={14} /> Done
+               <CheckCircle2 size={14} /> Shipped
              </button>
            )}
         </div>

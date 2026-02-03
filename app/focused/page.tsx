@@ -78,7 +78,7 @@ function TaskDisplay({ view }: { view: string }) {
               <div className="task-main">
                 <input
                   type="checkbox"
-                  checked={task.status === "done"}
+                  checked={task.status === "shipped"}
                   onChange={() => {/* TODO: Toggle task status */}}
                   className="task-checkbox"
                 />

@@ -30,9 +30,11 @@ export type BeadsStatus =
   | 'blocked'
   | 'deferred'
   | 'closed'
-  | 'todo'
-  | 'review'
-  | 'done'; // Custom statuses
+  | 'agent_working'
+  | 'needs_jordan'
+  | 'changes_requested'
+  | 'ready_to_commit'
+  | 'pushed'; // Custom statuses
 
 export type BeadsIssueType =
   | 'task'

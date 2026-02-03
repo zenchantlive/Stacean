@@ -11,17 +11,19 @@ import clsx from "clsx";
 // ============================================================================
 
 const STATUS_CONFIG: Record<TaskStatus, { title: string; color: string; border: string }> = {
-  todo: { title: "To Do", color: "text-zinc-400", border: "border-zinc-700" },
-  "in-progress": { title: "In Progress", color: "text-blue-400", border: "border-blue-500/50" },
-  review: { title: "Review", color: "text-purple-400", border: "border-purple-500/50" },
-  done: { title: "Done", color: "text-green-400", border: "border-green-500/50" },
+  todo: { title: "Todo", color: "text-zinc-400", border: "border-zinc-700" },
+  active: { title: "Active", color: "text-blue-400", border: "border-blue-500/50" },
+  "needs-you": { title: "Needs You", color: "text-purple-400", border: "border-purple-500/50" },
+  ready: { title: "Ready", color: "text-amber-400", border: "border-amber-500/50" },
+  shipped: { title: "Shipped", color: "text-green-400", border: "border-green-500/50" },
 };
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
-  { value: "todo", label: "To Do" },
-  { value: "in-progress", label: "In Progress" },
-  { value: "review", label: "Review" },
-  { value: "done", label: "Done" },
+  { value: "todo", label: "Todo" },
+  { value: "active", label: "Active" },
+  { value: "needs-you", label: "Needs You" },
+  { value: "ready", label: "Ready" },
+  { value: "shipped", label: "Shipped" },
 ];
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
@@ -31,7 +33,7 @@ const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
   { value: "low", label: "Low" },
 ];
 
-const COLUMNS: TaskStatus[] = ["todo", "in-progress", "review", "done"];
+const COLUMNS: TaskStatus[] = ["todo", "active", "needs-you", "ready", "shipped"];
 
 // ============================================================================
 // Component
@@ -52,9 +54,10 @@ export function TaskGrid({ tasks, selectedTaskId, selectedProject, onSelect, onU
   const groupedTasks = useMemo(() => {
     const groups: Record<TaskStatus, Task[]> = {
       todo: [],
-      "in-progress": [],
-      review: [],
-      done: [],
+      active: [],
+      "needs-you": [],
+      ready: [],
+      shipped: [],
     };
 
     filteredTasks.forEach(task => {
@@ -99,7 +102,7 @@ export function TaskGrid({ tasks, selectedTaskId, selectedProject, onSelect, onU
 
   const handleComplete = () => {
     if (!expandedTask) return;
-    onUpdateTask(expandedTask.id, { status: "done" });
+    onUpdateTask(expandedTask.id, { status: "shipped" });
   };
 
   return (

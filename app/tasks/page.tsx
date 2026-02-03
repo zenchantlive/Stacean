@@ -103,9 +103,10 @@ export default function TasksPage() {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "todo": return "bg-gray-500/20 text-gray-400";
-      case "in-progress": return "bg-blue-500/20 text-blue-400";
-      case "review": return "bg-yellow-500/20 text-yellow-400";
-      case "done": return "bg-green-500/20 text-green-400";
+      case "active": return "bg-blue-500/20 text-blue-400";
+      case "needs-you": return "bg-purple-500/20 text-purple-400";
+      case "ready": return "bg-amber-500/20 text-amber-400";
+      case "shipped": return "bg-green-500/20 text-green-400";
       default: return "bg-gray-500/20 text-gray-400";
     }
   };
@@ -157,13 +158,13 @@ export default function TasksPage() {
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
-                  checked={task.status === "done"}
-                  onChange={() => updateTaskStatus(task.id, task.status === "done" ? "todo" : "done")}
+                  checked={task.status === "shipped"}
+                  onChange={() => updateTaskStatus(task.id, task.status === "shipped" ? "todo" : "shipped")}
                   className="mt-1 w-5 h-5 rounded border-2 border-[#52525B] bg-transparent cursor-pointer checked:bg-[#F97316] checked:border-[#F97316]"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className={`text-sm font-medium ${task.status === "done" ? "text-[#71717A] line-through" : "text-white"}`}>
+                    <h3 className={`text-sm font-medium ${task.status === "shipped" ? "text-[#71717A] line-through" : "text-white"}`}>
                       {task.title}
                     </h3>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${getStatusBadgeColor(task.status)}`}>

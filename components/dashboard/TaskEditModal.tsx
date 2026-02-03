@@ -15,10 +15,11 @@ interface TaskEditModalProps {
 }
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string; color: string }[] = [
-  { value: 'todo', label: 'To Do', color: 'text-zinc-400' },
-  { value: 'in-progress', label: 'In Progress', color: 'text-blue-400' },
-  { value: 'review', label: 'Review', color: 'text-purple-400' },
-  { value: 'done', label: 'Done', color: 'text-green-400' },
+  { value: 'todo', label: 'Todo', color: 'text-zinc-400' },
+  { value: 'active', label: 'Active', color: 'text-blue-400' },
+  { value: 'needs-you', label: 'Needs You', color: 'text-purple-400' },
+  { value: 'ready', label: 'Ready', color: 'text-amber-400' },
+  { value: 'shipped', label: 'Shipped', color: 'text-green-400' },
 ];
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
@@ -52,7 +53,7 @@ export function TaskEditModal({ task, mode, onModeChange, onClose, onUpdate }: T
 
   const handleDelete = () => {
     if (confirm('Delete this task?')) {
-      onUpdate(task.id, { status: 'done' } as any); // Soft delete via API
+      onUpdate(task.id, { status: 'shipped' } as any); // Soft delete via API
       onClose();
     }
   };

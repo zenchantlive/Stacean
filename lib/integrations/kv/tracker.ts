@@ -11,7 +11,7 @@ import {
 // Types
 // ============================================================================
 
-export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
+export type TaskStatus = 'todo' | 'active' | 'needs-you' | 'ready' | 'shipped';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface TaskContext {
@@ -192,9 +192,10 @@ export const taskTracker = new TaskTrackerAdapter();
  */
 const BEADS_STATUS_MAP: Record<TaskStatus, string> = {
   'todo': 'open',
-  'in-progress': 'in_progress',
-  'review': 'review',
-  'done': 'done',
+  'active': 'agent_working',
+  'needs-you': 'needs_jordan',
+  'ready': 'ready_to_commit',
+  'shipped': 'pushed',
 };
 
 const BEADS_PRIORITY_MAP: Record<TaskPriority, number> = {

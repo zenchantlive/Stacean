@@ -53,7 +53,7 @@ export interface BeadsIssue {
   design?: string;
   acceptance_criteria?: string;
   notes?: string;
-  status: 'open' | 'in_progress' | 'done' | 'blocked' | 'closed';
+  status: 'open' | 'in_progress' | 'done' | 'blocked' | 'closed' | 'agent_working' | 'needs_jordan' | 'changes_requested' | 'ready_to_commit' | 'pushed';
   priority: number;
   issue_type: BeadsIssueType;
   assignee?: string;
@@ -134,10 +134,15 @@ export function taskToBead(task: {
 function mapBeadStatusToTaskStatus(status: BeadsIssue['status']): TaskStatus {
   const statusMap: Record<BeadsIssue['status'], TaskStatus> = {
     'open': 'todo',
-    'in_progress': 'in-progress',
-    'done': 'done',
-    'blocked': 'in-progress',
-    'closed': 'done',
+    'in_progress': 'active',
+    'done': 'shipped',
+    'blocked': 'active',
+    'closed': 'shipped',
+    'agent_working': 'active',
+    'needs_jordan': 'needs-you',
+    'changes_requested': 'active',
+    'ready_to_commit': 'ready',
+    'pushed': 'shipped',
   };
   return statusMap[status] || 'todo';
 }
