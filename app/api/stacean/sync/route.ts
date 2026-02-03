@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const since = searchParams.get('since');
 
     // Fetch all recent messages (sorted by time, oldest first)
-    const allMessages = await staceanChat.getMessages(since);
+    const allMessages = await staceanChat.getMessages(since || undefined);
 
     // Filter only outbound (User -> Agent) messages
     const outboundMessages = allMessages.filter(m => m.direction === 'outbound');
