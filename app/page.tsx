@@ -156,21 +156,37 @@ function ObjectivesView({ tasks }: { tasks: Task[] }) {
 }
 
 function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: boolean; tasks: Task[] }) {
-  const getStatsForAgent = (agentName: string) => {
-    const items = tasks.filter((t) => t.agentCodeName === agentName);
-    const counts = items.reduce(
+  const getAgentData = (agentName: string) => {
+    const agentTasks = tasks.filter((t) => t.agentCodeName === agentName);
+    const counts = agentTasks.reduce(
       (acc, task) => {
         acc[task.status] = (acc[task.status] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>
     );
+    
+    // Find current active task
+    const activeTask = agentTasks.find(t => t.status === 'active');
+    // Find tasks needing review
+    const needsReview = agentTasks.filter(t => t.status === 'needs-you');
+    // Find recently shipped (last 3)
+    const shipped = agentTasks
+      .filter(t => t.status === 'shipped')
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 3);
+    
     return {
-      todo: counts["todo"] || 0,
-      active: counts["active"] || 0,
-      needs: counts["needs-you"] || 0,
-      ready: counts["ready"] || 0,
-      shipped: counts["shipped"] || 0,
+      counts: {
+        todo: counts["todo"] || 0,
+        active: counts["active"] || 0,
+        needs: counts["needs-you"] || 0,
+        ready: counts["ready"] || 0,
+        shipped: counts["shipped"] || 0,
+      },
+      activeTask,
+      needsReview,
+      shipped,
     };
   };
 
@@ -187,14 +203,14 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
           <div className="empty">No agents active</div>
         ) : (
           agents.map((agent) => {
-            const stats = getStatsForAgent(agent.name);
+            const data = getAgentData(agent.name);
             return (
               <div key={agent.id} className="agent-card">
                 <div className="agent-header">
                   <div className="agent-icon">
                     <Bot size={18} />
                   </div>
-                  <div>
+                  <div className="agent-header-text">
                     <div className="agent-name">{agent.name}</div>
                     <div className={`agent-status ${agent.status}`}>
                       <span className="dot" />
@@ -202,19 +218,59 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
                     </div>
                   </div>
                 </div>
-                {agent.currentTask && (
-                  <div className="agent-task">
-                    <Target size={14} />
-                    <span>{agent.currentTask}</span>
+                
+                {/* Currently Doing */}
+                {data.activeTask && (
+                  <div className="agent-section">
+                    <div className="agent-section-title">
+                      <Target size={12} />
+                      Currently Doing
+                    </div>
+                    <div className="agent-task-highlight">
+                      {data.activeTask.title}
+                    </div>
                   </div>
                 )}
+                
+                {/* Needs Your Review */}
+                {data.needsReview.length > 0 && (
+                  <div className="agent-section">
+                    <div className="agent-section-title urgent">
+                      <span className="urgent-dot" />
+                      Needs Your Review ({data.needsReview.length})
+                    </div>
+                    <div className="agent-task-list">
+                      {data.needsReview.slice(0, 2).map(t => (
+                        <div key={t.id} className="agent-task-item">{t.title}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Recently Shipped */}
+                {data.shipped.length > 0 && (
+                  <div className="agent-section">
+                    <div className="agent-section-title shipped">
+                      <CheckSquare size={12} />
+                      Recently Shipped ({data.counts.shipped})
+                    </div>
+                    <div className="agent-task-list">
+                      {data.shipped.map(t => (
+                        <div key={t.id} className="agent-task-item shipped">{t.title}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Status Breakdown */}
                 <div className="agent-metadata">
-                  <span className="meta-pill">Todo: {stats.todo}</span>
-                  <span className="meta-pill">Active: {stats.active}</span>
-                  <span className="meta-pill">Needs You: {stats.needs}</span>
-                  <span className="meta-pill">Ready: {stats.ready}</span>
-                  <span className="meta-pill">Shipped: {stats.shipped}</span>
+                  <span className="meta-pill todo">Todo: {data.counts.todo}</span>
+                  <span className="meta-pill active">Active: {data.counts.active}</span>
+                  <span className="meta-pill needs">Needs You: {data.counts.needs}</span>
+                  <span className="meta-pill ready">Ready: {data.counts.ready}</span>
+                  <span className="meta-pill shipped">Shipped: {data.counts.shipped}</span>
                 </div>
+                
                 <div className="agent-stats">
                   <div>
                     <Clock size={12} />
@@ -266,46 +322,116 @@ function EnergyView({ tasks }: { tasks: Task[] }) {
 }
 
 function LiveView({ agents, tasks, derived }: { agents: Agent[]; tasks: Task[]; derived: boolean }) {
-  const feed = [
+  // Group items by time period
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const thisWeekStart = new Date(today);
+  thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
+
+  const getTimeGroup = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    if (dateOnly.getTime() === today.getTime()) return "today";
+    if (dateOnly.getTime() === yesterday.getTime()) return "yesterday";
+    if (dateOnly >= thisWeekStart) return "thisWeek";
+    return "older";
+  };
+
+  const formatRelativeTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Build feed items
+  const allItems = [
     ...agents
       .filter((a) => a.lastActivity)
       .map((a) => ({
-        id: a.id,
+        id: `agent-${a.id}`,
         type: "agent" as const,
-        title: `${a.name} ${a.status}`,
-        description: a.currentTask || "No active task",
+        title: a.name,
+        subtitle: a.status === "running" ? "Currently active" : "Idle",
+        description: a.currentTask,
         timestamp: a.lastActivity!,
         color: a.status === "running" ? "#22C55E" : "#71717A",
+        icon: Bot,
       })),
     ...tasks.map((t) => ({
-      id: t.id,
+      id: `task-${t.id}`,
       type: "task" as const,
       title: t.title,
-      description: `Status: ${t.status}`,
+      subtitle: `Moved to ${t.status}`,
+      description: t.agentCodeName ? `via ${t.agentCodeName}` : undefined,
       timestamp: t.updatedAt,
       color: STATUS_COLORS[t.status] || "#71717A",
+      icon: CheckSquare,
     })),
-  ]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 20);
+  ].sort((a, b) => new Date(String(b.timestamp)).getTime() - new Date(String(a.timestamp)).getTime());
+
+  const groups = {
+    today: allItems.filter(i => getTimeGroup(String(i.timestamp)) === "today"),
+    yesterday: allItems.filter(i => getTimeGroup(String(i.timestamp)) === "yesterday"),
+    thisWeek: allItems.filter(i => getTimeGroup(String(i.timestamp)) === "thisWeek"),
+    older: allItems.filter(i => getTimeGroup(String(i.timestamp)) === "older"),
+  };
+
+  const renderGroup = (title: string, items: typeof allItems, emptyMessage?: string) => {
+    if (items.length === 0 && !emptyMessage) return null;
+    return (
+      <div className="feed-group">
+        <div className="feed-group-header">{title}</div>
+        {items.length === 0 ? (
+          <div className="feed-empty">{emptyMessage}</div>
+        ) : (
+          items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.id} className="feed-item">
+                <div className="feed-item-dot" style={{ background: item.color }} />
+                <div className="feed-item-icon">
+                  <Icon size={14} style={{ color: item.color }} />
+                </div>
+                <div className="feed-item-content">
+                  <div className="feed-item-title">
+                    {item.title}
+                    <span className="feed-item-subtitle">{item.subtitle}</span>
+                  </div>
+                  {item.description && (
+                    <div className="feed-item-desc">{item.description}</div>
+                  )}
+                </div>
+                <div className="feed-item-time">{formatRelativeTime(String(item.timestamp))}</div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    );
+  };
 
   return (
     <CollapsibleSection
-      title={derived ? "Live Feed (Derived)" : "Live Feed"}
-      count={feed.length}
+      title="Activity Feed"
+      count={allItems.length}
       right={derived ? <span className="badge-outline">Derived</span> : undefined}
     >
       <div className="live-feed">
-        {feed.map((item) => (
-          <div key={`${item.type}-${item.id}`} className="live-item">
-            <span className="live-dot" style={{ background: item.color }} />
-            <div className="live-content">
-              <div className="live-title">{item.title}</div>
-              <div className="live-desc">{item.description}</div>
-            </div>
-            <span className="muted">{formatTime(item.timestamp)}</span>
-          </div>
-        ))}
+        {renderGroup("Today", groups.today, "No activity today")}
+        {renderGroup("Yesterday", groups.yesterday)}
+        {renderGroup("Earlier This Week", groups.thisWeek)}
+        {renderGroup("Older", groups.older)}
       </div>
     </CollapsibleSection>
   );
@@ -505,45 +631,47 @@ export default function Home() {
 
       <main className={`main ${sidebarCollapsed ? "wide" : ""}`}>
         <div className="content-wrapper">
-          {currentTask && (
-            <div className="banner">
-              <div className="banner-dot" />
-              <div>
-                <div className="banner-label">Atlas Activity</div>
-                <div className="banner-text">{currentTask}</div>
+          <div className="content-inner">
+            {currentTask && (
+              <div className="banner">
+                <div className="banner-dot" />
+                <div>
+                  <div className="banner-label">Atlas Activity</div>
+                  <div className="banner-text">{currentTask}</div>
+                </div>
               </div>
+            )}
+            
+            {/* Pipeline Stats Header */}
+            <div className="pipeline-stats">
+              <button className="stat-box" onClick={() => setView("stack")}>
+                <span className="stat-count" style={{ color: "#F97316" }}>{tasks.filter(t => t.status === 'todo').length}</span>
+                <span className="stat-label">Todo</span>
+              </button>
+              <button className="stat-box" onClick={() => setView("stack")}>
+                <span className="stat-count" style={{ color: "#3B82F6" }}>{tasks.filter(t => t.status === 'active').length}</span>
+                <span className="stat-label">Active</span>
+              </button>
+              <button className="stat-box urgent" onClick={() => setView("stack")}>
+                <span className="stat-count" style={{ color: "#8B5CF6" }}>{tasks.filter(t => t.status === 'needs-you').length}</span>
+                <span className="stat-label">Needs You</span>
+              </button>
+              <button className="stat-box" onClick={() => setView("stack")}>
+                <span className="stat-count" style={{ color: "#F59E0B" }}>{tasks.filter(t => t.status === 'ready').length}</span>
+                <span className="stat-label">Ready</span>
+              </button>
+              <button className="stat-box" onClick={() => setView("stack")}>
+                <span className="stat-count" style={{ color: "#22C55E" }}>{tasks.filter(t => t.status === 'shipped').length}</span>
+                <span className="stat-label">Shipped</span>
+              </button>
             </div>
-          )}
-          
-          {/* Pipeline Stats Header */}
-          <div className="pipeline-stats">
-            <button className="stat-box" onClick={() => setView("stack")}>
-              <span className="stat-count" style={{ color: "#F97316" }}>{tasks.filter(t => t.status === 'todo').length}</span>
-              <span className="stat-label">Todo</span>
-            </button>
-            <button className="stat-box" onClick={() => setView("stack")}>
-              <span className="stat-count" style={{ color: "#3B82F6" }}>{tasks.filter(t => t.status === 'active').length}</span>
-              <span className="stat-label">Active</span>
-            </button>
-            <button className="stat-box urgent" onClick={() => setView("stack")}>
-              <span className="stat-count" style={{ color: "#8B5CF6" }}>{tasks.filter(t => t.status === 'needs-you').length}</span>
-              <span className="stat-label">Needs You</span>
-            </button>
-            <button className="stat-box" onClick={() => setView("stack")}>
-              <span className="stat-count" style={{ color: "#F59E0B" }}>{tasks.filter(t => t.status === 'ready').length}</span>
-              <span className="stat-label">Ready</span>
-            </button>
-            <button className="stat-box" onClick={() => setView("stack")}>
-              <span className="stat-count" style={{ color: "#22C55E" }}>{tasks.filter(t => t.status === 'shipped').length}</span>
-              <span className="stat-label">Shipped</span>
-            </button>
-          </div>
 
-          <div className="view-header">
-            <h2>{navItems.find((i) => i.id === view)?.label}</h2>
-            <p>{navItems.find((i) => i.id === view)?.desc}</p>
+            <div className="view-header">
+              <h2>{navItems.find((i) => i.id === view)?.label}</h2>
+              <p>{navItems.find((i) => i.id === view)?.desc}</p>
+            </div>
+            {renderView()}
           </div>
-          {renderView()}
         </div>
       </main>
 
@@ -585,9 +713,10 @@ export default function Home() {
         .status-title { color: white; font-weight: 600; font-size: 0.8rem; }
         .status-desc { color: #71717A; font-size: 0.7rem; }
 
-        .main { margin-left: 260px; padding: 1.5rem; min-height: 100vh; max-width: 1600px; }
+        .main { margin-left: 260px; padding: 1.5rem; min-height: 100vh; }
         .main.wide { margin-left: 72px; }
-        .content-wrapper { max-width: 1400px; margin: 0 auto; }
+        .content-wrapper { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+        .content-inner { width: 100%; max-width: 1400px; }
         .banner { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: 12px; background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.25); margin-bottom: 1.5rem; }
         .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: #F97316; animation: pulse 2s infinite; }
         .banner-label { color: #F97316; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
@@ -625,14 +754,30 @@ export default function Home() {
         .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
         .agent-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; padding: 1rem; }
         .agent-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .agent-header-text { flex: 1; }
         .agent-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(59,130,246,0.2); display: flex; align-items: center; justify-content: center; color: #93C5FD; }
         .agent-name { color: white; font-weight: 600; }
         .agent-status { font-size: 0.7rem; color: #A1A1AA; display: flex; align-items: center; gap: 0.4rem; }
         .agent-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #71717A; }
         .agent-status.running .dot { background: #22C55E; box-shadow: 0 0 8px #22C55E; }
+        .agent-section { margin-bottom: 0.75rem; padding: 0.5rem; background: rgba(255,255,255,0.02); border-radius: 8px; }
+        .agent-section-title { display: flex; align-items: center; gap: 0.4rem; font-size: 0.65rem; text-transform: uppercase; color: #A1A1AA; margin-bottom: 0.4rem; font-weight: 600; letter-spacing: 0.02em; }
+        .agent-section-title.urgent { color: #8B5CF6; }
+        .agent-section-title.shipped { color: #22C55E; }
+        .urgent-dot { width: 6px; height: 6px; background: #8B5CF6; border-radius: 50%; animation: pulse 2s infinite; }
+        .agent-task-highlight { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); padding: 0.5rem; border-radius: 6px; color: white; font-size: 0.8rem; font-weight: 500; }
+        .agent-task-list { display: flex; flex-direction: column; gap: 0.3rem; }
+        .agent-task-item { font-size: 0.75rem; color: #A1A1AA; padding: 0.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .agent-task-item:last-child { border-bottom: none; }
+        .agent-task-item.shipped { color: #7b8b7d; }
         .agent-task { display: flex; align-items: center; gap: 0.4rem; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2); padding: 0.6rem; border-radius: 8px; color: white; font-size: 0.8rem; }
         .agent-metadata { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
         .meta-pill { font-size: 0.6rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(255,255,255,0.08); color: #A1A1AA; }
+        .meta-pill.todo { background: rgba(113,113,122,0.2); color: #A1A1AA; }
+        .meta-pill.active { background: rgba(59,130,246,0.2); color: #93C5FD; }
+        .meta-pill.needs { background: rgba(139,92,246,0.2); color: #C4B5FD; }
+        .meta-pill.ready { background: rgba(245,158,11,0.2); color: #FDBA74; }
+        .meta-pill.shipped { background: rgba(34,197,94,0.2); color: #86EFAC; }
         .agent-stats { display: flex; gap: 0.5rem; margin-top: 0.6rem; color: #71717A; font-size: 0.7rem; }
         .agent-stats div { display: flex; align-items: center; gap: 0.3rem; }
 
@@ -641,7 +786,19 @@ export default function Home() {
         .energy-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
         .energy-chip { display: flex; align-items: center; gap: 0.4rem; background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.4rem 0.6rem; color: white; font-size: 0.75rem; }
 
-        .live-feed { display: flex; flex-direction: column; gap: 0.6rem; }
+        .live-feed { display: flex; flex-direction: column; gap: 1rem; }
+        .feed-group { border-left: 2px solid rgba(255,255,255,0.1); padding-left: 1rem; }
+        .feed-group-header { font-size: 0.7rem; text-transform: uppercase; color: #52525B; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .feed-empty { color: #52525B; font-size: 0.75rem; font-style: italic; padding: 0.5rem 0; }
+        .feed-item { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.6rem; background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 0.4rem; }
+        .feed-item:last-child { margin-bottom: 0; }
+        .feed-item-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 0.35rem; }
+        .feed-item-icon { width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .feed-item-content { flex: 1; min-width: 0; }
+        .feed-item-title { color: white; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 0.4rem; }
+        .feed-item-subtitle { color: #71717A; font-size: 0.7rem; font-weight: 400; }
+        .feed-item-desc { color: #52525B; font-size: 0.7rem; margin-top: 0.2rem; }
+        .feed-item-time { color: #52525B; font-size: 0.65rem; flex-shrink: 0; white-space: nowrap; }
         .live-item { display: flex; align-items: flex-start; gap: 0.6rem; background: #18181B; border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 0.75rem; }
         .live-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 0.35rem; }
         .live-title { color: white; font-size: 0.85rem; font-weight: 600; }
