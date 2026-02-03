@@ -42,8 +42,10 @@
 ### 2) **Agent Workflow Status Rules (Now)**
 - Update docs/TASK_WORKFLOW.md with new statuses + rules.
 
-### 3) **Desktop Layout Re‑invention**
-- Reduce full‑width stretch; use smarter column/grid layout.
+### 3) **Desktop Layout Re‑invention (DONE)**
+- Added max-width content wrapper + constrained kanban columns
+- Sidebar collapsed by default
+- Responsive kanban columns (5 → 3 → 2 → 1)
 
 ### 4) **Mobile Ergonomics + Less Scrolling**
 - Tighten spacing and improve ergonomic layout.
