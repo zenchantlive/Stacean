@@ -10,6 +10,7 @@ import {
   Clock,
   Layers,
   Menu,
+  MessageSquare,
   Target,
   X,
   Zap,
@@ -511,6 +512,7 @@ export default function Home() {
     { id: "lens", icon: Bot, label: "Agents", desc: "Active or assigned" },
     { id: "energy", icon: Zap, label: "Energy", desc: "By priority" },
     { id: "live", icon: Activity, label: "Live", desc: "Activity feed" },
+    { id: "chat", icon: MessageSquare, label: "Chat", desc: "Talk to Atlas", href: "/tasks" },
   ];
 
   const renderView = () => {
@@ -562,7 +564,13 @@ export default function Home() {
               <button
                 key={item.id}
                 className={`nav-item ${active ? "active" : ""}`}
-                onClick={() => setView(item.id)}
+                onClick={() => {
+                  if (item.href) {
+                    window.location.href = item.href;
+                  } else {
+                    setView(item.id);
+                  }
+                }}
               >
                 <Icon size={18} />
                 {!sidebarCollapsed && (
@@ -613,8 +621,13 @@ export default function Home() {
                 key={item.id}
                 className={`nav-item ${active ? "active" : ""}`}
                 onClick={() => {
-                  setView(item.id);
-                  setSidebarOpen(false);
+                  if (item.href) {
+                    window.location.href = item.href;
+                    setSidebarOpen(false);
+                  } else {
+                    setView(item.id);
+                    setSidebarOpen(false);
+                  }
                 }}
               >
                 <Icon size={18} />
@@ -667,8 +680,17 @@ export default function Home() {
             </div>
 
             <div className="view-header">
-              <h2>{navItems.find((i) => i.id === view)?.label}</h2>
-              <p>{navItems.find((i) => i.id === view)?.desc}</p>
+              <div className="view-header-left">
+                <h2>{navItems.find((i) => i.id === view)?.label}</h2>
+                <p>{navItems.find((i) => i.id === view)?.desc}</p>
+              </div>
+              <button
+                className="chat-btn"
+                onClick={() => window.location.href = "/tasks"}
+              >
+                <MessageSquare size={16} />
+                Chat with Atlas
+              </button>
             </div>
             {renderView()}
           </div>
@@ -676,7 +698,7 @@ export default function Home() {
       </main>
 
       <nav className="mobile-nav">
-        {navItems.map((item) => {
+        {navItems.filter(item => !item.href).map((item) => {
           const Icon = item.icon;
           const active = view === item.id;
           return (
@@ -690,6 +712,13 @@ export default function Home() {
             </button>
           );
         })}
+        <button
+          className="mobile-item"
+          onClick={() => window.location.href = "/tasks"}
+        >
+          <MessageSquare size={18} />
+          <span>Chat</span>
+        </button>
       </nav>
 
       <style>{`
@@ -721,8 +750,11 @@ export default function Home() {
         .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: #F97316; animation: pulse 2s infinite; }
         .banner-label { color: #F97316; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
         .banner-text { color: white; font-size: 0.9rem; }
-        .view-header h2 { color: white; font-size: 1.5rem; margin-bottom: 0.25rem; }
-        .view-header p { color: #71717A; font-size: 0.85rem; }
+        .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+        .view-header-left h2 { color: white; font-size: 1.5rem; margin-bottom: 0.25rem; }
+        .view-header-left p { color: #71717A; font-size: 0.85rem; }
+        .chat-btn { display: flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #F97316, #EA580C); color: white; border: 0; padding: 0.65rem 1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .chat-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
 
         .pipeline-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.25rem; }
         .stat-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 0.8rem 0.9rem; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 0.3rem; }
@@ -838,8 +870,9 @@ export default function Home() {
           .mobile-sidebar.open { transform: translateX(0); }
           .mobile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; color: white; }
           .overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 65; }
-          .view-header { margin-top: 4rem; }
-          .view-header h2 { font-size: 1.25rem; }
+          .view-header { flex-direction: column; align-items: stretch; gap: 0.75rem; margin-top: 4rem; }
+          .view-header-left h2 { font-size: 1.25rem; }
+          .chat-btn { justify-content: center; width: 100%; padding: 0.75rem; }
           .banner { margin-top: 0.5rem; }
           .feed-group { border-left: none; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.75rem; }
         }
