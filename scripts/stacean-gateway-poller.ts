@@ -178,17 +178,11 @@ async function runPoller() {
         for (const msg of messages) {
           console.log(`   Processing: ${msg.id} | ${msg.text.substring(0, 50)}...`);
 
-          // Forward to OpenClaw
-          const forwarded = await forwardToOpenClaw(msg);
-
-          if (forwarded) {
-            // For now, inject a placeholder response
-            // In the full implementation, we'd wait for the agent response
-            await injectResponse(
-              `[ECHO] Received: "${msg.text.substring(0, 100)}" - Agent response coming soon!`,
-              msg.id
-            );
-          }
+          // Forward to OpenClaw - responses go to Slack (default channel)
+          await forwardToOpenClaw(msg);
+          
+          // Note: OpenClaw responds in the main session, which routes to Slack
+          // The poller doesn't inject responses - OpenClaw's channels handle that
         }
       } else if (cycleCount % 10 === 0) {
         // Periodic heartbeat log
