@@ -480,7 +480,8 @@ export default function Home() {
 
   return (
     <div className="app">
-      <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+      {/* Desktop Sidebar */}
+      <aside className="sidebar-desktop">
         <div className="sidebar-header">
           <div className="logo">
             <Activity size={20} />
@@ -533,48 +534,52 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Mobile header */}
+      {/* Mobile Header - Always visible */}
       <header className="mobile-header">
         <button onClick={() => setSidebarOpen(true)} className="icon-btn">
           <Menu size={20} />
         </button>
-        <span>Atlas</span>
+        <span className="mobile-title">Atlas</span>
         <span className={`status-dot ${isOnline ? "online" : "offline"}`} />
       </header>
 
-      {/* Mobile sidebar */}
-      <aside className={`mobile-sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="mobile-top">
-          <span>Atlas</span>
-          <button onClick={() => setSidebarOpen(false)} className="icon-btn">
-            <X size={18} />
-          </button>
-        </div>
-        <nav className="nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = view === item.id;
-            return (
-              <button
-                key={item.id}
-                className={`nav-item ${active ? "active" : ""}`}
-                onClick={() => {
-                  setView(item.id);
-                  setSidebarOpen(false);
-                }}
-              >
-                <Icon size={18} />
-                <div>
-                  <div className="nav-title">{item.label}</div>
-                  <div className="nav-desc">{item.desc}</div>
-                </div>
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <aside className="mobile-sidebar-overlay" onClick={() => setSidebarOpen(false)}>
+          <aside className="mobile-sidebar" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-top">
+              <span>Atlas</span>
+              <button onClick={() => setSidebarOpen(false)} className="icon-btn">
+                <X size={18} />
               </button>
-            );
-          })}
-        </nav>
-      </aside>
-      {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)} />}
+            </div>
+            <nav className="nav">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = view === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    className={`nav-item ${active ? "active" : ""}`}
+                    onClick={() => {
+                      setView(item.id);
+                      setSidebarOpen(false);
+                    }}
+                  >
+                    <Icon size={18} />
+                    <div>
+                      <div className="nav-title">{item.label}</div>
+                      <div className="nav-desc">{item.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+        </aside>
+      )}
 
+      {/* Main Content Area */}
       <main className={`main ${sidebarCollapsed ? "wide" : ""}`}>
         <div className="content-wrapper">
           <div className="content-inner">
@@ -588,7 +593,7 @@ export default function Home() {
               </div>
             )}
             
-            {/* Pipeline Stats Header */}
+            {/* Pipeline Stats Header - Desktop only */}
             <div className="pipeline-stats">
               <button className="stat-box" onClick={() => setView("stack")}>
                 <span className="stat-count" style={{ color: "#F97316" }}>{tasks.filter(t => t.status === 'todo').length}</span>
@@ -598,7 +603,7 @@ export default function Home() {
                 <span className="stat-count" style={{ color: "#3B82F6" }}>{tasks.filter(t => t.status === 'active').length}</span>
                 <span className="stat-label">Active</span>
               </button>
-              <button className="stat-box urgent" onClick={() => setView("stack")}>
+              <button className="stat-box" onClick={() => setView("stack")}>
                 <span className="stat-count" style={{ color: "#8B5CF6" }}>{tasks.filter(t => t.status === 'needs-you').length}</span>
                 <span className="stat-label">Needs You</span>
               </button>
@@ -623,6 +628,7 @@ export default function Home() {
         </div>
       </main>
 
+      {/* Mobile Bottom Nav */}
       <nav className="mobile-nav">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -639,165 +645,6 @@ export default function Home() {
           );
         })}
       </nav>
-
-      <style>{`
-        .app { min-height: 100vh; background: #09090B; }
-        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #18181B; border-right: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; display: flex; flex-direction: column; z-index: 40; }
-        .sidebar.collapsed { width: 72px; padding: 1rem 0.5rem; }
-        .sidebar-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
-        .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg,#F97316,#EA580C); display: flex; align-items: center; justify-content: center; color: white; }
-        .title { color: white; font-weight: 700; font-size: 0.9rem; }
-        .subtitle { color: #71717A; font-size: 0.7rem; }
-        .collapse-btn { margin-left: auto; background: rgba(255,255,255,0.08); border: 0; color: #A1A1AA; border-radius: 8px; padding: 0.25rem; cursor: pointer; }
-        .nav { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
-        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.9rem; border-radius: 12px; border: 0; background: transparent; color: white; cursor: pointer; text-align: left; }
-        .nav-item.active { background: rgba(249,115,22,0.15); color: #F97316; }
-        .nav-title { font-weight: 600; font-size: 0.85rem; }
-        .nav-desc { color: #71717A; font-size: 0.7rem; }
-        .status { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 12px; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .status-dot.online { background: #22C55E; box-shadow: 0 0 10px #22C55E; }
-        .status-dot.offline { background: #EF4444; }
-        .status-title { color: white; font-weight: 600; font-size: 0.8rem; }
-        .status-desc { color: #71717A; font-size: 0.7rem; }
-
-        .main { margin-left: 260px; padding: 1.5rem; min-height: 100vh; }
-        .main.wide { margin-left: 72px; }
-        .content-wrapper { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
-        .content-inner { width: 100%; max-width: 1400px; }
-        .banner { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: 12px; background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.25); margin-bottom: 1.5rem; }
-        .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: #F97316; animation: pulse 2s infinite; }
-        .banner-label { color: #F97316; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
-        .banner-text { color: white; font-size: 0.9rem; }
-        .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-        .view-header-left h2 { color: white; font-size: 1.5rem; margin-bottom: 0.25rem; }
-        .view-header-left p { color: #71717A; font-size: 0.85rem; }
-        .chat-btn { display: flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #F97316, #EA580C); color: white; border: 0; padding: 0.65rem 1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .chat-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
-
-        .pipeline-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin: 1rem 0 1.25rem; }
-        .stat-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 0.8rem 0.9rem; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 0.3rem; }
-        .stat-box:hover { border-color: rgba(249,115,22,0.4); }
-        .stat-box.urgent { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.08); }
-        .stat-count { font-size: 1.3rem; font-weight: 700; }
-        .stat-label { color: #A1A1AA; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-
-        .section { margin-bottom: 1rem; }
-        .section-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; color: white; cursor: pointer; }
-        .section-title { display: flex; align-items: center; gap: 0.5rem; }
-        .section-dot { width: 6px; height: 6px; background: #F97316; border-radius: 50%; }
-        .section-count { margin-left: 0.5rem; background: rgba(255,255,255,0.1); padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; color: #A1A1AA; }
-        .section-right { display: flex; align-items: center; gap: 0.5rem; color: #A1A1AA; }
-        .section-body { padding: 0.75rem 0.25rem; }
-
-        .kanban { display: grid; grid-template-columns: repeat(5, 260px); gap: 0.75rem; justify-content: center; }
-        .task-col { display: flex; flex-direction: column; gap: 0.75rem; }
-        .task-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 0.9rem; }
-        .task-card h4 { color: white; font-size: 0.85rem; font-weight: 600; }
-        .task-card p { color: #71717A; font-size: 0.75rem; margin-top: 0.4rem; }
-        .task-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-        .badge { font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 6px; text-transform: uppercase; font-weight: 700; }
-        .task-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
-        .agent-tag { font-size: 0.6rem; background: rgba(249,115,22,0.15); color: #F97316; padding: 0.1rem 0.4rem; border-radius: 4px; }
-        .muted { color: #52525B; font-size: 0.7rem; }
-        .empty { padding: 1rem; text-align: center; color: #52525B; font-size: 0.8rem; }
-
-        .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
-        .agent-card { background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; padding: 1rem; }
-        .agent-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-        .agent-header-text { flex: 1; }
-        .agent-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(59,130,246,0.2); display: flex; align-items: center; justify-content: center; color: #93C5FD; }
-        .agent-name { color: white; font-weight: 600; }
-        .agent-status { font-size: 0.7rem; color: #A1A1AA; display: flex; align-items: center; gap: 0.4rem; }
-        .agent-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #71717A; }
-        .agent-status.running .dot { background: #22C55E; box-shadow: 0 0 8px #22C55E; }
-        .agent-section { margin-bottom: 0.75rem; padding: 0.5rem; background: rgba(255,255,255,0.02); border-radius: 8px; }
-        .agent-section-title { display: flex; align-items: center; gap: 0.4rem; font-size: 0.65rem; text-transform: uppercase; color: #A1A1AA; margin-bottom: 0.4rem; font-weight: 600; letter-spacing: 0.02em; }
-        .agent-section-title.urgent { color: #8B5CF6; }
-        .agent-section-title.shipped { color: #22C55E; }
-        .urgent-dot { width: 6px; height: 6px; background: #8B5CF6; border-radius: 50%; animation: pulse 2s infinite; }
-        .agent-task-highlight { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); padding: 0.5rem; border-radius: 6px; color: white; font-size: 0.8rem; font-weight: 500; }
-        .agent-task-list { display: flex; flex-direction: column; gap: 0.3rem; }
-        .agent-task-item { font-size: 0.75rem; color: #A1A1AA; padding: 0.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .agent-task-item:last-child { border-bottom: none; }
-        .agent-task-item.shipped { color: #7b8b7d; }
-        .agent-task { display: flex; align-items: center; gap: 0.4rem; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2); padding: 0.6rem; border-radius: 8px; color: white; font-size: 0.8rem; }
-        .agent-metadata { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
-        .meta-pill { font-size: 0.6rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(255,255,255,0.08); color: #A1A1AA; }
-        .meta-pill.todo { background: rgba(113,113,122,0.2); color: #A1A1AA; }
-        .meta-pill.active { background: rgba(59,130,246,0.2); color: #93C5FD; }
-        .meta-pill.needs { background: rgba(139,92,246,0.2); color: #C4B5FD; }
-        .meta-pill.ready { background: rgba(245,158,11,0.2); color: #FDBA74; }
-        .meta-pill.shipped { background: rgba(34,197,94,0.2); color: #86EFAC; }
-        .agent-stats { display: flex; gap: 0.5rem; margin-top: 0.6rem; color: #71717A; font-size: 0.7rem; }
-        .agent-stats div { display: flex; align-items: center; gap: 0.3rem; }
-
-        .energy { display: flex; flex-direction: column; gap: 0.75rem; }
-        .energy-band { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.8rem; }
-        .energy-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .energy-chip { display: flex; align-items: center; gap: 0.4rem; background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.4rem 0.6rem; color: white; font-size: 0.75rem; }
-
-        .live-feed { display: flex; flex-direction: column; gap: 1rem; }
-        .feed-group { border-left: 2px solid rgba(255,255,255,0.1); padding-left: 1rem; }
-        .feed-group-header { font-size: 0.7rem; text-transform: uppercase; color: #52525B; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
-        .feed-empty { color: #52525B; font-size: 0.75rem; font-style: italic; padding: 0.5rem 0; }
-        .feed-item { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.6rem; background: #18181B; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 0.4rem; }
-        .feed-item:last-child { margin-bottom: 0; }
-        .feed-item-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 0.35rem; }
-        .feed-item-icon { width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .feed-item-content { flex: 1; min-width: 0; }
-        .feed-item-title { color: white; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 0.4rem; }
-        .feed-item-subtitle { color: #71717A; font-size: 0.7rem; font-weight: 400; }
-        .feed-item-desc { color: #52525B; font-size: 0.7rem; margin-top: 0.2rem; }
-        .feed-item-time { color: #52525B; font-size: 0.65rem; flex-shrink: 0; white-space: nowrap; }
-        .live-item { display: flex; align-items: flex-start; gap: 0.6rem; background: #18181B; border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 0.75rem; }
-        .live-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 0.35rem; }
-        .live-title { color: white; font-size: 0.85rem; font-weight: 600; }
-        .live-desc { color: #71717A; font-size: 0.75rem; }
-
-        .badge-outline { border: 1px solid rgba(255,255,255,0.2); color: #A1A1AA; padding: 0.1rem 0.4rem; border-radius: 6px; font-size: 0.65rem; }
-        .pill { width: 8px; height: 8px; border-radius: 50%; border: 2px solid; }
-
-        .mobile-header, .mobile-nav, .mobile-sidebar, .overlay { display: none; }
-        .icon-btn { background: rgba(255,255,255,0.05); border: 0; border-radius: 8px; padding: 0.35rem; color: white; }
-
-        @media (max-width: 1400px) {
-          .kanban { grid-template-columns: repeat(3, 260px); }
-        }
-        @media (max-width: 1100px) {
-          .kanban { grid-template-columns: repeat(2, 260px); }
-        }
-        @media (max-width: 900px) {
-          .kanban { grid-template-columns: minmax(280px, 1fr); justify-content: stretch; }
-        }
-        @media (max-width: 768px) {
-          .sidebar { display: none; }
-          .main { margin-left: 0; padding: 0.75rem; padding-bottom: 5rem; }
-          .content-wrapper { max-width: 100%; align-items: stretch; }
-          .content-inner { max-width: 100%; }
-          .pipeline-stats { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-          .stat-box { padding: 0.6rem; }
-          .stat-count { font-size: 1.1rem; }
-          .kanban { display: flex; flex-direction: column; gap: 1rem; }
-          .task-col { width: 100%; }
-          .agent-grid { grid-template-columns: 1fr; }
-          .mobile-header { display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px; align-items: center; justify-content: space-between; padding: 0 0.75rem; background: rgba(24,24,27,0.95); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 60; }
-          .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(24,24,27,0.95); border-top: 1px solid rgba(255,255,255,0.05); padding: 0.5rem 0.5rem 1rem; justify-content: space-around; z-index: 60; }
-          .mobile-item { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; color: #71717A; background: none; border: 0; font-size: 0.7rem; }
-          .mobile-item.active { color: #F97316; }
-          .mobile-sidebar { display: block; position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #18181B; padding: 1rem; transform: translateX(-100%); transition: transform 0.2s ease; z-index: 70; }
-          .mobile-sidebar.open { transform: translateX(0); }
-          .mobile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; color: white; }
-          .overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 65; }
-          .view-header { flex-direction: column; align-items: stretch; gap: 0.75rem; margin-top: 4rem; }
-          .view-header-left h2 { font-size: 1.25rem; }
-          .chat-btn { justify-content: center; width: 100%; padding: 0.75rem; }
-          .banner { margin-top: 0.5rem; }
-          .feed-group { border-left: none; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.75rem; }
-        }
-
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-      `}</style>
     </div>
   );
 }
