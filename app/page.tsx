@@ -14,6 +14,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import ObjectivesView from "@/components/views/ObjectivesView";
 
 interface Agent {
   id: string;
@@ -98,62 +99,7 @@ function CollapsibleSection({
   );
 }
 
-function ObjectivesView({ tasks }: { tasks: Task[] }) {
-  const columns = [
-    { id: "todo", label: "📝 Todo", color: "#F97316" },
-    { id: "active", label: "🔨 Active", color: "#3B82F6" },
-    { id: "needs-you", label: "👤 Needs You", color: "#8B5CF6" },
-    { id: "ready", label: "📦 Ready", color: "#F59E0B" },
-    { id: "shipped", label: "✅ Shipped", color: "#22C55E" },
-  ];
-
-  return (
-    <div className="kanban">
-      {columns.map((col) => {
-        const colTasks = tasks.filter((t) => t.status === col.id);
-        return (
-          <CollapsibleSection
-            key={col.id}
-            title={col.label}
-            count={colTasks.length}
-            right={<span className="pill" style={{ borderColor: col.color }} />}
-          >
-            <div className="task-col">
-              {colTasks.length === 0 ? (
-                <div className="empty">No tasks</div>
-              ) : (
-                colTasks.map((task) => {
-                  const p = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low;
-                  return (
-                    <div
-                      key={task.id}
-                      className="task-card"
-                      style={{ borderLeft: `3px solid ${p.border}` }}
-                    >
-                      <div className="task-top">
-                        <h4>{task.title}</h4>
-                        <span className="badge" style={{ background: p.bg, color: p.text }}>
-                          {task.priority}
-                        </span>
-                      </div>
-                      {task.description && <p>{task.description}</p>}
-                      <div className="task-meta">
-                        {task.agentCodeName && (
-                          <span className="agent-tag">🤖 {task.agentCodeName}</span>
-                        )}
-                        <span className="muted">{formatTime(task.updatedAt)}</span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </CollapsibleSection>
-        );
-      })}
-    </div>
-  );
-}
+// ObjectivesView is imported from components/views/ObjectivesView.tsx
 
 function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: boolean; tasks: Task[] }) {
   const getAgentData = (agentName: string) => {
@@ -516,7 +462,7 @@ export default function Home() {
   const renderView = () => {
     switch (view) {
       case "stack":
-        return <ObjectivesView tasks={tasks} />;
+        return <ObjectivesView />;
       case "lens":
         return (
           <AgentsView agents={useDerivedAgents ? derivedAgents : agents} derived={useDerivedAgents} tasks={tasks} />
@@ -528,7 +474,7 @@ export default function Home() {
           <LiveView agents={useDerivedAgents ? derivedAgents : agents} tasks={tasks} derived={useDerivedAgents} />
         );
       default:
-        return <ObjectivesView tasks={tasks} />;
+        return <ObjectivesView />;
     }
   };
 
@@ -562,13 +508,7 @@ export default function Home() {
               <button
                 key={item.id}
                 className={`nav-item ${active ? "active" : ""}`}
-                onClick={() => {
-                  if (item.href) {
-                    window.location.href = item.href;
-                  } else {
-                    setView(item.id);
-                  }
-                }}
+                onClick={() => setView(item.id)}
               >
                 <Icon size={18} />
                 {!sidebarCollapsed && (
@@ -619,13 +559,8 @@ export default function Home() {
                 key={item.id}
                 className={`nav-item ${active ? "active" : ""}`}
                 onClick={() => {
-                  if (item.href) {
-                    window.location.href = item.href;
-                    setSidebarOpen(false);
-                  } else {
-                    setView(item.id);
-                    setSidebarOpen(false);
-                  }
+                  setView(item.id);
+                  setSidebarOpen(false);
                 }}
               >
                 <Icon size={18} />
