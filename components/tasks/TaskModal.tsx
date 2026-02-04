@@ -1,19 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Clock, User, Tag, MessageSquare, File, CheckCircle, ChevronDown } from 'lucide-react';
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: string;
-  agentCodeName?: string;
-  assignedTo?: string;
-  createdAt: number | string;
-  updatedAt: number | string;
-}
+import { useState, useEffect, useRef } from 'react';
+import { X, Clock, User, Tag, MessageSquare, File, CheckCircle, ChevronDown, History, Bot } from 'lucide-react';
+import type { Task, TaskActivity } from '@/types/task';
 
 interface TaskModalProps {
   task: Task;
@@ -21,19 +10,23 @@ interface TaskModalProps {
   onUpdate: (updates: Partial<Task>) => void;
 }
 
-type TabType = 'overview';
+type TabType = 'overview' | 'activity' | 'sub_agents' | 'deliverables';
 
 const TABS: { id: TabType; label: string; icon: typeof Clock }[] = [
   { id: 'overview', label: 'Overview', icon: Tag },
+  { id: 'activity', label: 'Activity', icon: History },
+  { id: 'sub_agents', label: 'Sub-agents', icon: Bot },
+  { id: 'deliverables', label: 'Deliverables', icon: File },
 ];
 
-const STATUS_OPTIONS = [
+const STATUS_OPTIONS: { value: string; label: string; color: string }[] = [
   { value: 'todo', label: 'TODO', color: '#71717A' },
-  { value: 'assigned', label: 'ASSIGNED', color: '#F59E0B' },
-  { value: 'active', label: 'ACTIVE', color: '#3B82F6' },
-  { value: 'needs-you', label: 'NEEDS YOU', color: '#8B5CF6' },
-  { value: 'ready', label: 'READY', color: '#F97316' },
-  { value: 'shipped', label: 'SHIPPED', color: '#22C55E' },
+  { value: 'assigned', label: 'ASSIGNED', color: '#3B82F6' },
+  { value: 'in_progress', label: 'IN PROGRESS', color: '#F97316' },
+  { value: 'needs-you', label: 'NEEDS YOU', color: '#F59E0B' },
+  { value: 'ready', label: 'READY', color: '#22C55E' },
+  { value: 'review', label: 'REVIEW', color: '#8B5CF6' },
+  { value: 'shipped', label: 'SHIPPED', color: '#10B981' },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -43,18 +36,51 @@ const PRIORITY_OPTIONS = [
   { value: 'urgent', label: 'Urgent', color: '#EF4444' },
 ];
 
-function formatTime(timestamp: number | string) {
-  const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+function formatTime(timestamp: string) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatFullTime(timestamp: string) {
+  const date = new Date(timestamp);
   return date.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    year: 'numeric',
   });
 }
 
-export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
+export function TaskModal({ task: initialTask, onClose, onUpdate }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [localTask, setLocalTask] = useState<Task>(initialTask);
+  const [newComment, setNewComment] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Update local task when prop changes
+  useEffect(() => {
+    setLocalTask(initialTask);
+  }, [initialTask]);
+
+  // Scroll to bottom when activity tab opens
+  useEffect(() => {
+    if (activeTab === 'activity' && scrollRef.current) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      }, 100);
+    }
+  }, [activeTab]);
 
   // Handle escape key
   const handleEscape = (e: KeyboardEvent) => {
@@ -71,8 +97,136 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
     if (e.target === e.currentTarget) onClose();
   };
 
+  // Track status change for activity log
   const handleStatusChange = (newStatus: string) => {
-    onUpdate({ status: newStatus });
+    const status = newStatus as import('@/types/task').TaskStatus;
+    const oldStatus = STATUS_OPTIONS.find(s => s.value === localTask.status)?.label || localTask.status;
+    const newStatusLabel = STATUS_OPTIONS.find(s => s.value === status)?.label || status;
+    
+    const activity: import('@/types/task').TaskActivity = {
+      id: `act-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      type: 'status_changed',
+      details: `Status changed from ${oldStatus} to ${newStatusLabel}`,
+    };
+
+    const updatedTask: import('@/types/task').Task = {
+      ...localTask,
+      status: status,
+      updatedAt: new Date().toISOString(),
+      activities: [activity, ...(localTask.activities || [])],
+    };
+
+    setLocalTask(updatedTask);
+    onUpdate({ 
+      status: status, 
+      activities: updatedTask.activities,
+    });
+  };
+
+  // Track priority change for activity log
+  const handlePriorityChange = (newPriority: string) => {
+    const priority = newPriority as import('@/types/task').TaskPriority;
+    const oldPriority = PRIORITY_OPTIONS.find(p => p.value === localTask.priority)?.label || localTask.priority;
+    const newPriorityLabel = PRIORITY_OPTIONS.find(p => p.value === priority)?.label || priority;
+    
+    const activity: import('@/types/task').TaskActivity = {
+      id: `act-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      type: 'priority_changed',
+      details: `Priority changed from ${oldPriority} to ${newPriorityLabel}`,
+    };
+
+    const updatedTask: import('@/types/task').Task = {
+      ...localTask,
+      priority: priority,
+      updatedAt: new Date().toISOString(),
+      activities: [activity, ...(localTask.activities || [])],
+    };
+
+    setLocalTask(updatedTask);
+    onUpdate({ 
+      priority: priority,
+      activities: updatedTask.activities,
+    });
+  };
+
+  // Track description change
+  const handleDescriptionChange = (newDescription: string) => {
+    const oldDesc = localTask.description || '';
+    const newDesc = newDescription.trim();
+    
+    // Only log if actually changed
+    if (oldDesc !== newDesc && newDesc) {
+      const activity: TaskActivity = {
+        id: `act-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        type: 'description_updated',
+        details: 'Description updated',
+      };
+
+      setLocalTask(prev => ({
+        ...prev,
+        description: newDesc,
+        updatedAt: new Date().toISOString(),
+        activities: [activity, ...(prev.activities || [])],
+      }));
+    } else {
+      setLocalTask(prev => ({ ...prev, description: newDesc }));
+    }
+  };
+
+  // Track assignee change
+  const handleAssigneeChange = (newAssignee: string) => {
+    const activity: TaskActivity = {
+      id: `act-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      type: 'assigned',
+      details: newAssignee ? `Assigned to ${newAssignee}` : 'Assignment cleared',
+    };
+
+    const updatedTask = {
+      ...localTask,
+      agentCodeName: newAssignee,
+      assignedTo: newAssignee,
+      updatedAt: new Date().toISOString(),
+      activities: [activity, ...(localTask.activities || [])],
+    };
+
+    setLocalTask(updatedTask);
+    onUpdate({ 
+      agentCodeName: newAssignee,
+      assignedTo: newAssignee,
+      activities: updatedTask.activities,
+    });
+  };
+
+  // Add comment
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+
+    const activity: TaskActivity = {
+      id: `act-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      type: 'comment',
+      details: newComment.trim(),
+    };
+
+    const updatedTask = {
+      ...localTask,
+      updatedAt: new Date().toISOString(),
+      activities: [activity, ...(localTask.activities || [])],
+    };
+
+    setLocalTask(updatedTask);
+    setNewComment('');
+    onUpdate({ activities: updatedTask.activities });
+  };
+
+  // Save all changes
+  const handleSave = () => {
+    onUpdate(localTask);
+    onClose();
   };
 
   return (
@@ -80,15 +234,15 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl">
+      <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#27272A]">
+        <div className="flex items-center justify-between p-6 border-b border-[#27272A] flex-shrink-0">
           <div className="flex-1 min-w-0 mr-4">
             <h2 className="text-lg font-semibold text-white truncate">
-              {task.title}
+              {localTask.title}
             </h2>
             <p className="text-[#71717A] text-sm mt-1">
-              Updated {formatTime(task.updatedAt)}
+              Updated {formatTime(localTask.updatedAt)}
             </p>
           </div>
           <button
@@ -100,7 +254,7 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 px-6 border-b border-[#27272A]">
+        <div className="flex gap-1 px-6 border-b border-[#27272A] flex-shrink-0 overflow-x-auto">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -108,7 +262,7 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px
+                  flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px flex-shrink-0
                   ${activeTab === tab.id 
                     ? 'text-[#F97316] border-[#F97316]' 
                     : 'text-[#71717A] border-transparent hover:text-white'
@@ -116,25 +270,25 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
                 `}
               >
                 <Icon size={16} />
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             );
           })}
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[50vh]">
+        <div className="p-6 overflow-y-auto flex-1">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Status & Priority */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-[#A1A1AA] mb-2 uppercase tracking-wider">
                     Status
                   </label>
                   <div className="relative">
                     <select
-                      value={task.status}
+                      value={localTask.status}
                       onChange={(e) => handleStatusChange(e.target.value)}
                       className="w-full bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-3 text-white appearance-none cursor-pointer focus:outline-none focus:border-[#F97316]"
                     >
@@ -154,8 +308,8 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
                   </label>
                   <div className="relative">
                     <select
-                      value={task.priority}
-                      onChange={(e) => onUpdate({ priority: e.target.value })}
+                      value={localTask.priority}
+                      onChange={(e) => handlePriorityChange(e.target.value)}
                       className="w-full bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-3 text-white appearance-none cursor-pointer focus:outline-none focus:border-[#F97316]"
                     >
                       {PRIORITY_OPTIONS.map((option) => (
@@ -175,8 +329,9 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
                   Description
                 </label>
                 <textarea
-                  value={task.description || ''}
-                  onChange={(e) => onUpdate({ description: e.target.value })}
+                  value={localTask.description || ''}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
+                  onBlur={() => onUpdate({ description: localTask.description })}
                   placeholder="Add a description..."
                   className="w-full bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-3 text-white text-sm placeholder-[#52525B] focus:outline-none focus:border-[#F97316] resize-none"
                   rows={4}
@@ -190,20 +345,97 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
                 </label>
                 <input
                   type="text"
-                  value={task.agentCodeName || task.assignedTo || ''}
-                  onChange={(e) => onUpdate({ agentCodeName: e.target.value })}
+                  value={localTask.agentCodeName || localTask.assignedTo || ''}
+                  onChange={(e) => handleAssigneeChange(e.target.value)}
+                  onBlur={() => onUpdate({ 
+                    agentCodeName: localTask.agentCodeName,
+                    assignedTo: localTask.assignedTo,
+                  })}
                   placeholder="Unassigned"
                   className="w-full bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-3 text-white text-sm placeholder-[#52525B] focus:outline-none focus:border-[#F97316]"
                 />
               </div>
+
+              {/* Project */}
+              {localTask.project && (
+                <div>
+                  <label className="block text-xs font-medium text-[#A1A1AA] mb-2 uppercase tracking-wider">
+                    Project
+                  </label>
+                  <div className="bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-3 text-white text-sm">
+                    {localTask.project}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'activity' && (
+            <div className="space-y-4" ref={scrollRef}>
+              {/* Add Comment */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                  placeholder="Add a comment..."
+                  className="flex-1 bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-2.5 text-white text-sm placeholder-[#52525B] focus:outline-none focus:border-[#F97316]"
+                />
+                <button
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  className="px-4 py-2.5 bg-[#F97316] rounded-lg text-white text-sm font-medium hover:bg-[#EA580C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <MessageSquare size={16} />
+                </button>
+              </div>
+
+              {/* Activity Timeline */}
+              {localTask.activities && localTask.activities.length > 0 ? (
+                <div className="space-y-3">
+                  {localTask.activities.map((activity) => (
+                    <div key={activity.id} className="flex gap-3">
+                      <div className="flex-shrink-0 w-2 h-2 rounded-full bg-[#F97316] mt-2" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm">{activity.details}</p>
+                        <p className="text-[#71717A] text-xs mt-1">
+                          {formatTime(activity.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <History size={32} className="mx-auto text-[#52525B] mb-3" />
+                  <p className="text-[#71717A] text-sm">No activity yet</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'sub_agents' && (
+            <div className="text-center py-8">
+              <Bot size={32} className="mx-auto text-[#52525B] mb-3" />
+              <p className="text-[#71717A] text-sm">Sub-agent tracking coming soon</p>
+              <p className="text-[#52525B] text-xs mt-1">This will show which agents are working on this task</p>
+            </div>
+          )}
+
+          {activeTab === 'deliverables' && (
+            <div className="text-center py-8">
+              <File size={32} className="mx-auto text-[#52525B] mb-3" />
+              <p className="text-[#71717A] text-sm">Deliverable tracking coming soon</p>
+              <p className="text-[#52525B] text-xs mt-1">This will show files and artifacts related to this task</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-[#27272A] bg-[#09090B]">
+        <div className="flex items-center justify-between p-6 border-t border-[#27272A] bg-[#09090B] flex-shrink-0">
           <div className="text-[#71717A] text-sm">
-            Task ID: {task.id}
+            Task ID: {localTask.id}
           </div>
           <div className="flex gap-3">
             <button
@@ -213,10 +445,7 @@ export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
               Cancel
             </button>
             <button
-              onClick={() => {
-                onUpdate(task);
-                onClose();
-              }}
+              onClick={handleSave}
               className="px-6 py-2 bg-[#F97316] rounded-lg text-white text-sm font-medium hover:bg-[#EA580C] transition-colors"
             >
               Save Changes

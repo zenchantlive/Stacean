@@ -1,8 +1,8 @@
-// Task Tracker API - KV with Beads Mirroring
-// Uses KV for production (real-time), mirrors to Beads for local tracking
+// Task Tracker API - KV Storage (with Beads mirroring)
+// Primary: KV (syncs on Vercel), Secondary: Beads (local only, best-effort)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { taskTracker, type CreateTaskInput, type UpdateTaskInput, type Task, type TaskPriority, type TaskStatus } from '@/lib/integrations/kv/tracker';
+import { taskTracker, type CreateTaskInput, type UpdateTaskInput, type Task } from '@/lib/integrations/kv/tracker';
 
 // ============================================================================
 // GET /api/tracker/tasks - List all tasks
@@ -45,11 +45,10 @@ export async function POST(request: NextRequest) {
     const taskInput: CreateTaskInput = {
       title: body.title,
       description: body.description,
-      priority: (body.priority as TaskPriority) || 'medium',
+      priority: body.priority,
       assignedTo: body.assignedTo,
       agentCodeName: body.agentCodeName,
       project: queryProject || body.project,
-      parentId: body.parentId,
     };
 
     const task = await taskTracker.createTask(taskInput);
@@ -75,11 +74,13 @@ export async function PATCH(
 
     if (updates.title) updateInput.title = updates.title;
     if (updates.description) updateInput.description = updates.description;
-    if (updates.priority) updateInput.priority = updates.priority as TaskPriority;
-    if (updates.status) updateInput.status = updates.status as TaskStatus;
+    if (updates.priority) updateInput.priority = updates.priority;
+    if (updates.status) updateInput.status = updates.status;
     if (updates.assignedTo) {
       updateInput.assignedTo = updates.assignedTo === 'JORDAN' ? undefined : updates.assignedTo;
     }
+    if (updates.agentCodeName) updateInput.agentCodeName = updates.agentCodeName;
+    if (updates.activities) updateInput.activities = updates.activities;
 
     const task = await taskTracker.updateTask(params.id, updateInput);
 

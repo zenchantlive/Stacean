@@ -2,572 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html {
-    background-color: #18181B;
-    height: 100%;
-  }
+@import '../lib/design-tokens.css';
 
-  body {
-    background-color: #18181B;
-    color: #E4E4E7;
-    font-family: "Inter", sans-serif;
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    /* Remove centering constraints - let content flow naturally */
-    display: block;
+/* Custom Scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Base Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
-@layer components {
-  /* ==========================================================================
-     RESPONSIVE CONTAINER SYSTEM
-     Mobile: Full width phone-like experience
-     Desktop: Full-width responsive layout with optional phone simulation
-     ========================================================================== */
-
-  /* Default: Full-width responsive container */
-  .app-container {
-    width: 100%;
-    min-height: 100vh;
-    background-color: #09090B;
-    position: relative;
-    overflow-x: hidden;
-    overflow-y: auto; /* Enable scrolling */
-    display: flex;
-    flex-direction: column;
+@keyframes slideIn {
+  from {
+    transform: translateX(-10px);
+    opacity: 0;
   }
-
-  /* Phone simulation mode - ONLY when explicitly requested */
-  .phone-container {
-    width: 100%;
-    max-width: 100%;
-    height: 100dvh;
-    background-color: #09090B;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Desktop: Centered phone simulation (opt-in) */
-  @media (min-width: 450px) {
-    .phone-container {
-      max-width: 400px;
-      height: 844px;
-      border-radius: 48px;
-      box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
-      border: 12px solid #18181B;
-      margin: 2rem auto; /* Center with margin */
-    }
-  }
-
-  /* Desktop full-width mode (default) */
-  @media (min-width: 768px) {
-    .app-container {
-      max-width: none;
-    }
-  }
-
-  /* Large desktop optimizations */
-  @media (min-width: 1280px) {
-    .app-container {
-      /* Optional: max-width with centering for very large screens */
-      /* max-width: 1400px; */
-      /* margin: 0 auto; */
-    }
-  }
-
-  /* ==========================================================================
-     SCROLLING SYSTEM
-     ========================================================================== */
-
-  /* Enable smooth scrolling globally */
-  .scrollable {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Horizontal scroll snap (for widget carousels) */
-  .snap-x {
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    overflow-x: auto;
-    overflow-y: hidden;
-    height: 100%;
-    padding-bottom: 80px;
-  }
-
-  /* Desktop: Convert horizontal snap to grid */
-  @media (min-width: 768px) {
-    .snap-x-desktop-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 1.5rem;
-      overflow-x: visible;
-      overflow-y: auto;
-      padding: 2rem;
-      height: auto;
-      min-height: 100vh;
-    }
-
-    .snap-x-desktop-grid > * {
-      scroll-snap-align: none;
-      min-width: auto;
-      width: 100%;
-      height: auto;
-    }
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .snap-x > * {
-    scroll-snap-align: start;
-  }
-
-  /* ==========================================================================
-     AURORA & VISUAL EFFECTS
-     ========================================================================== */
-
-  .aurora {
-    position: absolute;
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, rgba(200, 107, 86, 0.15) 0%, rgba(200, 107, 86, 0) 70%);
-    filter: blur(60px);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Desktop: Larger aurora effects */
-  @media (min-width: 768px) {
-    .aurora {
-      width: 500px;
-      height: 500px;
-      filter: blur(80px);
-    }
-  }
-
-  /* ==========================================================================
-     GLASSMORPHISM
-     ========================================================================== */
-
-  .glass-card {
-    background: rgba(39, 39, 42, 0.5);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 24px;
-  }
-
-  /* Desktop: More subtle glass effect */
-  @media (min-width: 768px) {
-    .glass-card {
-      background: rgba(39, 39, 42, 0.3);
-      border-radius: 16px;
-    }
-  }
-
-  /* ==========================================================================
-     WIDGETS
-     ========================================================================== */
-
-  .widget {
-    width: 100%;
-    height: 100%;
-    padding: 24px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Desktop: Widget as card */
-  @media (min-width: 768px) {
-    .widget {
-      background: rgba(39, 39, 42, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 16px;
-      height: auto;
-      min-height: 400px;
-    }
-  }
-
-  /* ==========================================================================
-     TYPOGRAPHY
-     ========================================================================== */
-
-  .font-mono-muted {
-    font-family: "JetBrains Mono", monospace;
-    color: #A1A1AA;
-    font-size: 0.75rem;
-  }
-
-  h1, h2, h3 {
-    color: #FAFAFA;
-  }
-
-  /* Desktop: Larger headings */
-  @media (min-width: 768px) {
-    h1 {
-      font-size: 2.5rem;
-    }
-    h2 {
-      font-size: 1.75rem;
-    }
-    h3 {
-      font-size: 1.25rem;
-    }
-  }
-
-  /* ==========================================================================
-     SAFE AREA & NAVIGATION SPACING
-     ========================================================================== */
-
-  /* Mobile bottom nav compensation */
-  .pb-safe {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Desktop: Remove mobile nav padding */
-  @media (min-width: 768px) {
-    .pb-safe {
-      padding-bottom: 2rem;
-    }
-  }
-
-  /* Top safe area for mobile notch/status bar */
-  .pt-safe {
-    padding-top: env(safe-area-inset-top, 0px);
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
-/* ==========================================================================
-   FOCUSED INTEGRATED PAGE (/focused)
-   ========================================================================== */
-
-.back-link {
-  padding: var(--space-md);
-  padding-top: calc(var(--header-height) + var(--safe-top) + var(--space-sm));
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  font-size: var(--text-sm);
-  text-decoration: none;
-  transition: background var(--transition-fast), color var(--transition-fast);
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.back-btn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.focused-view {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
-.current-activity {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  background: var(--color-accent-muted);
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-md);
+.animate-in {
+  animation: fadeIn 0.2s ease-out;
 }
 
-.activity-label {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+.animate-in-fade {
+  animation: fadeIn 0.3s ease-out;
 }
 
-.activity-value {
-  font-size: var(--text-base);
-  font-weight: var(--font-medium);
-  color: var(--color-accent);
+.animate-in-slide {
+  animation: slideIn 0.3s ease-out;
 }
 
-/* ==========================================================================
-   AGENTS PANEL
-   ========================================================================== */
-
-.agents-panel h2 {
-  margin: 0 0 var(--space-md) 0;
-  font-size: var(--text-xl);
+.animate-in-slide-up {
+  animation: slideUp 0.3s ease-out;
 }
 
-.current-atlas {
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-lg);
+.animate-in-scale {
+  animation: scaleIn 0.2s ease-out;
 }
 
-.atlas-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
-  color: var(--color-accent);
-  font-weight: var(--font-medium);
+/* Safe area for mobile devices */
+pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-.atlas-activity {
-  padding-left: calc(24px + var(--space-sm));
-  font-size: var(--text-base);
-  color: var(--color-text-primary);
+pt-safe {
+  padding-top: env(safe-area-inset-top, 0);
 }
 
-.agents-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
 
-.no-agents {
-  text-align: center;
-  color: var(--color-text-muted);
-  padding: var(--space-lg);
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.agent-card {
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.agent-status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.status-dot.online { background: var(--color-status-online); }
-.status-dot.busy { background: var(--color-status-busy); }
-.status-dot.offline { background: var(--color-status-offline); }
-
-/* Safe area padding for mobile notch */
-.safe-area-pt {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-.agent-name {
-  font-weight: var(--font-medium);
-}
-
-.agent-task {
-  margin: var(--space-sm) 0 0 0;
-  padding-left: calc(8px + var(--space-sm));
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
-
-/* Header */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #18181B;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  z-index: 30;
-}
-.header-brand { display: flex; align-items: center; gap: 8px; }
-.header-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #F97316;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Text selection */
+::selection {
+  background-color: var(--accent-light);
   color: white;
 }
-.header-title { font-size: 16px; font-weight: 600; color: #f2efed; }
-.header-status { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #9a8f86; }
-.status-indicator { width: 8px; height: 8px; border-radius: 50%; }
-.status-indicator.online { background: #10B981; box-shadow: 0 0 10px rgba(16,185,129,0.4); }
-.status-indicator.offline { background: #EF4444; }
 
-/* ==========================================================================
-   RESPONSIVE STICKY NAVIGATION FOR FOCUSED PAGE
-   ========================================================================== */
-
-/* Mobile Safe Areas */
-.safe-area-pt {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-.safe-area-pb {
-  padding-bottom: env(safe-area-inset-bottom, 24px);
-}
-
-/* Mobile: Full-width, sticky nav */
-@media (max-width: 767px) {
-  .app-container {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+/* Loading skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
   }
-
-  .app-container main {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 24px));
-  }
-
-  /* Sticky bottom nav */
-  nav.fixed.bottom-0 {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
-    background: rgba(24, 24, 27, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    z-index: 100;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+  100% {
+    background-position: 1000px 0;
   }
 }
 
-/* Desktop: Grid layout */
-@media (min-width: 768px) {
-  .app-container main {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    padding: 1.5rem;
-    padding-top: 5rem;
-    height: auto;
-    min-height: 100vh;
-    overflow-y: visible;
-  }
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
 }
-
-@media (min-width: 1280px) {
-  .app-container main {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* ==========================================================================
-   RELATIVE UNITS & TYPOGRAPHY
-   ========================================================================== */
-
-/* Use rem for spacing */
-:root {
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-
-  /* Status colors for consistent theming */
-  --color-status-online: #10B981;
-  --color-status-offline: #52525B;
-  --color-status-busy: #F97316;
-
-  /* Theme colors for consistency */
-  --color-accent: #F97316;
-  --color-text-muted: #71717A;
-}
-
-/* Fluid typography */
-@media (max-width: 767px) {
-  body {
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  
-  h1 { font-size: 1.5rem; }
-  h2 { font-size: 1.25rem; }
-  h3 { font-size: 1.125rem; }
-}
-
-@media (min-width: 768px) {
-  body {
-    font-size: 16px;
-    line-height: 1.6;
-  }
-  
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
-}
-
-/* ==========================================================================
-   TOUCH TARGETS (44px minimum per WCAG)
-   ========================================================================== */
-
-button {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-@media (max-width: 767px) {
-  button.w-12.h-12 {
-    width: 100%;
-    height: 56px;
-    border-radius: 12px;
-  }
-}
-
-/* ==========================================================================
-   CARD LAYOUTS
-   ========================================================================== */
-
-.agent-card {
-  background: rgba(39, 39, 42, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-@media (min-width: 768px) {
-  .agent-card {
-    border-radius: 16px;
-    padding: 1.25rem;
-  }
-}
-@import "./focused.css";

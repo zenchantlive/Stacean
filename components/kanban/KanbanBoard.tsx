@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Plus, Settings } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
+import { TaskModal } from '../tasks/TaskModal';
 import { SSEStatusIndicator } from '../common/SSEStatusIndicator';
 import { Task, TaskStatus } from '@/types/task';
 
@@ -26,6 +27,16 @@ const COLUMNS = [
   { id: 'shipped' as TaskStatus, title: 'SHIPPED', color: '#10B981' },
 ];
 
+const STATUS_OPTIONS = [
+  { value: 'todo', label: 'TODO', color: '#71717A' },
+  { value: 'assigned', label: 'ASSIGNED', color: '#3B82F6' },
+  { value: 'in_progress', label: 'IN PROGRESS', color: '#F97316' },
+  { value: 'needs-you', label: 'NEEDS YOU', color: '#F59E0B' },
+  { value: 'ready', label: 'READY', color: '#22C55E' },
+  { value: 'review', label: 'REVIEW', color: '#8B5CF6' },
+  { value: 'shipped', label: 'SHIPPED', color: '#10B981' },
+];
+
 export function KanbanBoard({
   initialTasks,
   onTaskClick,
@@ -36,11 +47,62 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      setIsMobile(isTouchDevice);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Sync tasks when initialTasks change
-  React.useEffect(() => {
+  useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
+
+  // Handle task update from modal
+  const handleTaskUpdate = useCallback((taskId: string, updates: Partial<Task>) => {
+    // Optimistic update
+    setTasks(prev => prev.map(t => 
+      t.id === taskId ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
+    ));
+
+    // Call external handler
+    if (onTaskUpdate) {
+      onTaskUpdate(taskId, updates);
+    }
+
+    // Update selected task if it's the one being edited
+    if (selectedTask && selectedTask.id === taskId) {
+      setSelectedTask(prev => prev ? { ...prev, ...updates, updatedAt: new Date().toISOString() } : null);
+    }
+  }, [onTaskUpdate, selectedTask]);
+
+  // Handle task click (for modal)
+  const handleTaskClickInternal = useCallback((taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setSelectedTask(task);
+      if (onTaskClick) {
+        onTaskClick(taskId);
+      }
+    }
+  }, [tasks, onTaskClick]);
+
+  // Handle delete with modal
+  const handleTaskDeleteInternal = useCallback((taskId: string) => {
+    setSelectedTask(null);
+    if (onTaskDelete) {
+      onTaskDelete(taskId);
+    }
+  }, [onTaskDelete]);
 
   const onDragStart = useCallback((start: { draggableId: string }) => {
     const task = tasks.find((t) => t.id === start.draggableId);
@@ -67,7 +129,7 @@ export function KanbanBoard({
       const sourceStatus = source.droppableId as TaskStatus;
       const destinationStatus = destination.droppableId as TaskStatus;
 
-      // Find the task
+      // Find task
       const taskIndex = tasks.findIndex((t) => t.id === draggableId);
       const task = tasks[taskIndex];
       if (!task) return;
@@ -179,16 +241,25 @@ export function KanbanBoard({
                 title={column.title}
                 color={column.color}
                 tasks={getColumnTasks(column.id)}
-                onTaskClick={onTaskClick}
-                onTaskDelete={onTaskDelete}
+                onTaskClick={handleTaskClickInternal}
+                onTaskDelete={handleTaskDeleteInternal}
               />
             ))}
           </div>
         </div>
       </DragDropContext>
 
-      {/* Dragging Overlay */}
-      {draggedTask && (
+      {/* Task Modal */}
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={(updates) => handleTaskUpdate(selectedTask.id, updates)}
+        />
+      )}
+
+      {/* Dragging Overlay (desktop only) */}
+      {!isMobile && draggedTask && (
         <div className="fixed inset-0 z-50 pointer-events-none flex items-start justify-center pt-24 bg-black/10 backdrop-blur-[2px] animate-in fade-in duration-200">
           <div className="bg-[var(--bg-secondary)] border-2 border-[var(--accent)] rounded-xl p-4 shadow-2xl max-w-md pointer-events-auto transform animate-in zoom-in-95 slide-in-from-top-8 duration-200">
             <div className="flex items-center justify-between mb-2">

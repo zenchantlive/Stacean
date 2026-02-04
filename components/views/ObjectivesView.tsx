@@ -1,37 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
+import { SSEStatusIndicator } from '@/components/common/SSEStatusIndicator';
+import { Task } from '@/types/task';
 
 export function ObjectivesView() {
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   // Fetch tasks
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const res = await fetch('/api/tracker/tasks');
-        const data = await res.json();
-        setTasks(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Failed to fetch tasks:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchTasks();
-    const interval = setInterval(fetchTasks, 5000);
-    return () => clearInterval(interval);
+  const fetchTasks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tracker/tasks');
+      const data = await res.json();
+      setTasks(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  // Initial fetch
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
   // Handle task move
-  const handleTaskUpdate = async (taskId: string, updates: any) => {
+  const handleTaskUpdate = useCallback(async (taskId: string, updates: Partial<Task>) => {
     // Optimistic update
     setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, ...updates, updatedAt: Date.now() } : t
+      t.id === taskId ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
     ));
 
     // Persist to API
@@ -41,18 +42,23 @@ export function ObjectivesView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
+      
+      // Fetch updated tasks to confirm
+      await fetchTasks();
     } catch (err) {
       console.error('Failed to update task:', err);
+      // Revert on error
+      await fetchTasks();
     }
-  };
+  }, [fetchTasks]);
 
   // Handle task click
-  const handleTaskClick = (taskId: string) => {
+  const handleTaskClick = useCallback((taskId: string) => {
     setSelectedTaskId(taskId);
-  };
+  }, []);
 
   // Handle delete
-  const handleTaskDelete = async (taskId: string) => {
+  const handleTaskDelete = useCallback(async (taskId: string) => {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
     // Optimistic update
@@ -62,10 +68,43 @@ export function ObjectivesView() {
       await fetch(`/api/tracker/tasks/${taskId}`, {
         method: 'DELETE',
       });
+      
+      // Fetch updated tasks to confirm
+      await fetchTasks();
     } catch (err) {
       console.error('Failed to delete task:', err);
+      // Revert on error
+      await fetchTasks();
     }
-  };
+  }, [fetchTasks]);
+
+  // Handle create task
+  const handleCreateTask = useCallback(async () => {
+    const title = prompt('Enter task title:');
+    if (!title?.trim()) return;
+
+    try {
+      await fetch('/api/tracker/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          title: title.trim(),
+          priority: 'medium',
+        }),
+      });
+      
+      // Fetch updated tasks
+      await fetchTasks();
+    } catch (err) {
+      console.error('Failed to create task:', err);
+      alert('Failed to create task. Please try again.');
+    }
+  }, [fetchTasks]);
+
+  // Handle settings click
+  const handleSettingsClick = useCallback(() => {
+    alert('Settings panel coming soon!');
+  }, []);
 
   if (loading) {
     return (
@@ -84,6 +123,8 @@ export function ObjectivesView() {
       onTaskClick={handleTaskClick}
       onTaskDelete={handleTaskDelete}
       onTaskUpdate={handleTaskUpdate}
+      onCreateTask={handleCreateTask}
+      onSettingsClick={handleSettingsClick}
     />
   );
 }
