@@ -56,31 +56,40 @@ export class ChatAdapter extends KVAdapter {
    */
   async getMessages(since?: string): Promise<ChatMessage[]> {
     const timelineKey = this.key('timeline');
-    let minScore = 0;
+    let sinceTime = 0;
 
     if (since) {
-      // If 'since' is provided, we try to parse it as a timestamp
-      // or find the message with that ID and get its timestamp
+      // If 'since' is provided, find the message timestamp
       const sinceMsg = await this.get<ChatMessage>(since);
       if (sinceMsg) {
-        minScore = new Date(sinceMsg.createdAt).getTime() + 1; // +1 to exclude the message itself
+        sinceTime = new Date(sinceMsg.createdAt).getTime();
       } else {
         // Try parsing as timestamp
         const ts = Date.parse(since);
         if (!isNaN(ts)) {
-          minScore = ts + 1;
+          sinceTime = ts;
         }
       }
     }
 
-    // Get message IDs from sorted set (chronological order, oldest first)
-    // Note: Using Number.MAX_SAFE_INTEGER instead of '+inf' for compatibility
-    const ids = await kv.zrange(this.key(timelineKey), minScore, Number.MAX_SAFE_INTEGER, { byScore: true }) as string[];
+    // Get all message IDs from timeline
+    const ids = await kv.zrange(timelineKey, 0, -1) as string[];
     
     if (!ids || ids.length === 0) return [];
 
+    // Filter out messages before 'since' timestamp
+    const filteredIds: string[] = [];
+    for (const id of ids) {
+      const msg = await this.get<ChatMessage>(id);
+      if (msg && new Date(msg.createdAt).getTime() > sinceTime) {
+        filteredIds.push(id);
+      }
+    }
+
+    if (filteredIds.length === 0) return [];
+
     // Fetch message objects
-    const keys = ids.map(id => this.key(id));
+    const keys = filteredIds.map(id => this.key(id));
     const messages = await kv.mget<ChatMessage>(...keys);
 
     return messages.filter((m): m is ChatMessage => m !== null);
