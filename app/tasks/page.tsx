@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckSquare, FileText, BookOpen, Activity, Plus, Search, Filter, MessageSquare, Settings } from "lucide-react";
+import { CheckSquare, FileText, BookOpen, Activity, Plus, Search, Filter, Settings } from "lucide-react";
 import { Task, TaskStatus, TaskPriority } from "@/lib/types/tracker";
-import ChatTab from "@/components/chat/ChatTab";
 
 interface AgentSession {
   id: string;
@@ -14,7 +13,7 @@ interface AgentSession {
   currentAction?: string;
 }
 
-type TabType = "tasks" | "projects" | "notes" | "ledger" | "chat" | "settings";
+type TabType = "tasks" | "projects" | "notes" | "ledger" | "settings";
 
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<TabType>("tasks");
@@ -314,7 +313,6 @@ export default function TasksPage() {
             { id: "projects" as TabType, icon: FileText, label: "Projects", count: 3 },
             { id: "notes" as TabType, icon: BookOpen, label: "Notes", count: 0 },
             { id: "ledger" as TabType, icon: Activity, label: "Ledger", count: 4 },
-            { id: "chat" as TabType, icon: MessageSquare, label: "Chat", count: 0 },
             { id: "settings" as TabType, icon: Settings, label: "Settings", count: 0 },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -347,7 +345,6 @@ export default function TasksPage() {
         {activeTab === "projects" && renderProjectsTab()}
         {activeTab === "notes" && renderNotesTab()}
         {activeTab === "ledger" && renderLedgerTab()}
-        {activeTab === "chat" && <ChatTab />}
         {activeTab === "settings" && renderSettingsTab()}
       </main>
 

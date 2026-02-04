@@ -10,7 +10,6 @@ import {
   Clock,
   Layers,
   Menu,
-  MessageSquare,
   Target,
   X,
   Zap,
@@ -512,7 +511,6 @@ export default function Home() {
     { id: "lens", icon: Bot, label: "Agents", desc: "Active or assigned" },
     { id: "energy", icon: Zap, label: "Energy", desc: "By priority" },
     { id: "live", icon: Activity, label: "Live", desc: "Activity feed" },
-    { id: "chat", icon: MessageSquare, label: "Chat", desc: "Talk to Atlas", href: "/tasks" },
   ];
 
   const renderView = () => {
@@ -684,13 +682,6 @@ export default function Home() {
                 <h2>{navItems.find((i) => i.id === view)?.label}</h2>
                 <p>{navItems.find((i) => i.id === view)?.desc}</p>
               </div>
-              <button
-                className="chat-btn"
-                onClick={() => window.location.href = "/tasks"}
-              >
-                <MessageSquare size={16} />
-                Chat with Atlas
-              </button>
             </div>
             {renderView()}
           </div>
@@ -698,7 +689,7 @@ export default function Home() {
       </main>
 
       <nav className="mobile-nav">
-        {navItems.filter(item => !item.href).map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const active = view === item.id;
           return (
@@ -712,13 +703,6 @@ export default function Home() {
             </button>
           );
         })}
-        <button
-          className="mobile-item"
-          onClick={() => window.location.href = "/tasks"}
-        >
-          <MessageSquare size={18} />
-          <span>Chat</span>
-        </button>
       </nav>
 
       <style>{`
