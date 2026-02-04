@@ -1,217 +1,218 @@
-# Active State: Fleet Commander Workflow Integration
+# Active State: Stacean v2.0 Implementation
 
-**Last Updated:** 2026-01-29 23:00 PST
+**Last Updated:** 2026-02-04 00:45 PST
 
 ## Current Goal
-Integrate Fleet Commander into Atlas's workflow - every request Jordan makes creates a visible, trackable task with real-time progress updates.
+Implement Stacean v2.0 major upgrade - premium UI with drag-drop Kanban, real-time updates, and activity logging.
 
 ---
 
 ## What We Just Completed ✅
 
-### Phase 1: Fleet Commander Skill Created
-**File:** `/home/clawdbot/clawd/skills/fleet-commander/SKILL.md`
+### Phase 1: Architecture Pivot - SQLite Removed
+**Decision:** SQLite won't work on Vercel (no auto-sync). Reverted to KV/Beads as PRIMARY storage.
 
-**What it does:**
-- Golden Rule: Create tasks for EVERYTHING Jordan asks
-- Task creation patterns (quick vs multi-step vs sub-agent)
-- Priority guidelines
-- Status update workflow (heartbeat every 30-60s)
-- Task completion protocol
-- Atlas Dashboard integration
-- Beads CLI direct usage
-- Notes CLI for context
+**Rationale:**
+- SQLite requires Vercel Postgres or local files (won't sync)
+- KV/Beads auto-sync across deployments
+- Existing API already uses KV correctly
 
-**Key behaviors enforced:**
-1. Before working → Create task
-2. During work → Update status frequently
-3. After work → Mark complete
-4. When stuck → Update to error, ask for help
+**Actions Taken:**
+- Removed `lib/db/stacean-db.ts` (SQLite layer)
+- Removed `app/api/events/stream/route.ts` (SSE polling SQLite)
+- Removed `app/api/tasks/[id]/activities/route.ts` (activity API)
+- Kept UI components (data-agnostic)
 
-### Phase 2: Verified Beads Integration ✅
-**Finding:** Blog API is already using Beads (no migration needed!)
+### Phase 2: Premium UI Components Built
+**Components Created:**
 
-**Architecture (already in place):**
-```
-Atlas Tools (system/tools/tracker.ts)
-    ↓
-TrackerClient (lib/clients/tracker-client.ts)
-    ↓
-Blog API (app/api/tracker/*)
-    ↓
-Beads Integration (lib/integrations/beads/*)
-    ↓
-Beads CLI (bd) + SQLite (.beads/beads.db)
-```
+| Component | Path | Status |
+|-----------|------|--------|
+| **KanbanBoard** | `components/kanban/KanbanBoard.tsx` | ✓ Built with @hello-pangea/dnd |
+| **TaskCard** | `components/kanban/TaskCard.tsx` | ✓ Premium styling |
+| **KanbanColumn** | `components/kanban/KanbanColumn.tsx` | ✓ Column with drop zones |
+| **TaskModal** | `components/tasks/TaskModal.tsx` | ✓ 4 tabs (Overview, Activity, Sub-agents, Deliverables) |
+| **ObjectivesView** | `components/views/ObjectivesView.tsx` | ✓ Fetches from KV API |
+| **Task Types** | `types/task.ts` | ✓ TaskStatus, TaskPriority |
 
-**Verification:**
-- `/api/tracker/tasks` → Using `client-cached.ts`
-- `/api/tracker/agents` → Using `agents.ts`
-- Clean separation: Tools don't need to know about Beads
-- Atlas Dashboard already connected and showing data
+### Phase 3: Dashboard Integration
+**Updated:** `app/page.tsx`
 
-### Phase 3: Wired Skill into AGENTS.md ✅
-**File:** `/home/clawdbot/clawd/AGENTS.md`
+**Changes:**
+- Imported new `ObjectivesView` from components
+- Removed inline ObjectivesView function
+- Connected to KV API: `/api/tracker/tasks`
 
-**Added:**
-- "Mandatory Skills" section under "Every Session"
-- Fleet Commander listed as required reading
-- Atlas will read this skill automatically at session start
+**Current Views:**
+- **Objectives (Stack):** New KanbanBoard with drag-drop
+- **Agents (Lens):** Shows active agents + task breakdown
+- **Energy (Priority):** Tasks grouped by priority
+- **Live (Activity):** Real-time activity feed
 
-### Phase 4: Tested Workflow ✅
-**Test task:**
-```
-Title: Set up Fleet Commander workflow and skill
-ID: clawd-405
-Status: ✅ Completed
-```
+### Phase 4: Build Status
+**Status:** ✓ Compiling successfully
 
-**Verified:**
-- `node scripts/tasks.cjs add` works
-- `node scripts/tasks.cjs list` shows tasks
-- `node scripts/tasks.cjs done` marks complete
-- Beads database reflects changes
-- JSONL syncs to git
+**Current Output:**
+- First Load JS: ~86.9 kB
+- 3 static pages, 4 dynamic routes
+- Minor linting warnings (non-blocking)
+
+### Phase 5: Git Commit & Push
+**Branch:** `feature/stacean-v2-kv-kanban`
+**Commit:** 241d1ed
+**Status:** ✓ Pushed to origin
+
+**Files in Commit:**
+- 15 files changed, 2544 insertions(+), 79 deletions(-)
+- Created: components/kanban/, components/tasks/, components/views/, components/common/, components/layout/
+- Created: docs/PRD_STACEAN_V2.md, docs/DESIGN_STACEAN_V2.md
+- Modified: app/page.tsx, package.json, package-lock.json
+
+**PR URL:** https://github.com/zenchantlive/Stacean/pull/new/feature/stacean-v2-kv-kanban
 
 ---
 
-## What's Out of Date
+## Architecture (Current)
 
-### Previous Bug Investigation (January 29th)
-The old ACTIVE_STATE.md documented a bug fix for Fleet Commander UI:
-- Agent click error: `TypeError: Cannot read properties of undefined`
-- Fixed with optional chaining and null safety
+### Data Flow
+```
+KV/Beads (Redis on Vercel)
+    ↓
+Blog API (`/api/tracker/tasks`)
+    ↓
+ObjectivesView (fetches data)
+    ↓
+KanbanBoard (renders UI)
+    ↓
+TaskModal (edit tasks)
+```
 
-**Status:** ✅ RESOLVED - No longer relevant
-
-**Cleanup needed:**
-- Remove bug investigation details from active state
-- Keep only current work context
-- Move bug fix to memory file if needed for reference
+### Storage Strategy
+| Feature | Storage | Notes |
+|---------|---------|-------|
+| **Tasks** | KV/Beads | ✓ Auto-sync, production-ready |
+| **Activities** | KV (task metadata) | To be implemented |
+| **Sub-agents** | KV (session tracking) | To be implemented |
+| **Deliverables** | KV (file references) | To be implemented |
 
 ---
 
-## Current Implementation Plan
+## What's Next
 
-### Phase 1: Documentation Cleanup (Now)
-- [ ] Update ACTIVE_STATE.md (this file) ✅ IN PROGRESS
-- [ ] Archive bug investigation to `memory/2026-01-29.md`
-- [ ] Create summary document: `docs/fleet-commander-integration-summary.md` ✅ DONE
+### Phase 1: Complete Remaining Features
+- [ ] Activity logging → store in task metadata
+- [ ] SSE or polling for real-time updates
+- [ ] Sub-agent registration/tracking
+- [ ] Deliverable tracking
 
-### Phase 2: Skill Testing (Next Session)
-- [ ] Create task for a coding request
-- [ ] Verify `spawnTrackedAgent()` works
-- [ ] Verify `heartbeat()` updates show in Dashboard
-- [ ] Verify `completeTask()` marks task done
-- [ ] Test error handling with `agentError()`
+### Phase 2: Mobile Optimization
+**Design Change:** Tap → Modal → Status dropdown (not drag-drop)
 
-### Phase 3: Workflow Refinement (This Week)
-- [ ] Adjust task creation granularity (too many vs too few?)
-- [ ] Tune heartbeat frequency (30s vs 60s vs 90s)
-- [ ] Add Notes CLI integration to skill
-- [ ] Create task templates (bug fix, feature, refactor, etc.)
+**Why:** `@hello-pangea/dnd` doesn't work well on mobile
 
-### Phase 4: Dashboard Enhancements (Future)
-- [ ] Add real-time updates (SSE for task status)
-- [ ] Task dependencies in Beads
-- [ ] Multi-agent coordination
-- [ ] Task history view
+**Implementation:**
+- Detect touch device
+- Show dropdown on tap instead of drag
+- Keep drag-drop for desktop
+
+### Phase 3: Frontend Styling
+Using `frontend` skill patterns:
+- Dark mode with #F97316 (orange) accents
+- Glassmorphism cards with subtle borders
+- Smooth hover lift animations
+- Awwwards/Linear quality
+
+### Phase 4: Testing & Polish
+- [ ] Test drag-drop on desktop
+- [ ] Test tap-modal on mobile
+- [ ] Verify status persistence
+- [ ] Add loading states
+- [ ] Error handling
+
+---
+
+## Beads Tracking
+
+**Closed (Done):**
+- `clawd-5g0` - SSE Events Endpoint → Moved to KV architecture
+- `clawd-yby` - SQLite Setup → Cancelled (using KV instead)
+- `clawd-r1a` - Activity Logging API → To be refactored for KV
+- `clawd-90z` - KanbanBoard Component → ✓ Done
+- `clawd-9vk` - TaskModal with Tabs → ✓ Done
+
+**Remaining:**
+- `clawd-59h` - Frontend Styling → In Progress
+- Mobile Optimization → Needs bead created
 
 ---
 
 ## Files Modified/Created
 
 **Created:**
-1. `/home/clawdbot/clawd/skills/fleet-commander/SKILL.md` - Comprehensive workflow guide
-2. `/home/clawdbot/clawd/docs/fleet-commander-integration-summary.md` - Architecture summary
-3. `/home/clawdbot/clawd/ACTIVE_STATE.md` - Updated (this file)
+1. `components/kanban/KanbanBoard.tsx` - Drag-drop Kanban
+2. `components/kanban/KanbanColumn.tsx` - Column component
+3. `components/kanban/TaskCard.tsx` - Task card with priority
+4. `components/tasks/TaskModal.tsx` - Task detail modal
+5. `components/views/ObjectivesView.tsx` - View using KV API
+6. `types/task.ts` - TypeScript types
 
 **Modified:**
-1. `/home/clawdbot/clawd/AGENTS.md` - Added mandatory skills section
+1. `app/page.tsx` - Integrated new ObjectivesView
 
-**Tested:**
-1. Fleet Commander CLI (`scripts/tasks.cjs`)
-2. Beads integration (`lib/integrations/beads/*`)
-3. Atlas Dashboard (visual verification)
-
----
-
-## Next Immediate Steps
-
-### 1. Clean up memory
-- [ ] Move bug investigation details from ACTIVE_STATE to `memory/2026-01-29.md`
-- [ ] Update MEMORY.md with Fleet Commander integration success
-
-### 2. Commit and push
-- [ ] Add new skill to git
-- [ ] Update AGENTS.md
-- [ ] Commit changes
-- [ ] Push to master
-
-### 3. Test in next session
-- [ ] Jordan asks for something → Create task
-- [ ] Multi-step work → Spawn tracked agent
-- [ ] Update progress → Heartbeat
-- [ ] Complete → Mark done
-- [ ] Verify visibility in Atlas Dashboard
-
----
-
-## Success Criteria
-
-✅ **Atlas knows how to use Fleet Commander**
-   - Skill created and comprehensive
-   - Behavioral patterns defined
-   - Auto-loaded via AGENTS.md
-
-✅ **Every request creates a task**
-   - Golden rule in skill
-   - Examples for all patterns
-   - Includes non-coding tasks
-
-✅ **Beads integration verified**
-   - API already using Beads
-   - Architecture documented
-   - No migration needed
-
-✅ **Dashboard connected**
-   - Task Grid shows Beads data
-   - Fleet Bar shows agents
-   - Real-time status updates
-
-✅ **Workflow tested**
-   - Created and completed test task
-   - Verified CLI works
-   - Verified database sync
-
----
-
-## Remaining Questions
-
-1. **Task granularity:** Create task for EVERY request or multi-step only?
-   - Current: Everything
-   - May need adjustment based on Jordan's feedback
-
-2. **Heartbeat frequency:** 30s vs 60s vs 90s?
-   - Current: 30-60s recommended
-   - Will tune based on actual usage
-
-3. **Error handling:** When should I ask for help vs keep trying?
-   - Current: Update to error, explain, ask
-   - Seems reasonable
-
-4. **Notes integration:** Add automatically or manual?
-   - Current: Manual for complex work
-   - May add auto-notes later
+**Removed (SQLite approach):**
+1. `lib/db/stacean-db.ts` - SQLite database layer
+2. `app/api/events/stream/route.ts` - SSE with SQLite
+3. `app/api/tasks/[id]/activities/route.ts` - Activity API
 
 ---
 
 ## Status
 
-**Overall:** ✅ **Fleet Commander Integration Complete**
+**Overall:** 🔄 **In Progress - Core UI Complete, Committed to Feature Branch**
 
-**Current Phase:** Documentation cleanup
+**Current Phase:** Mobile Optimization + Documentation
 
-**Next Session:** Test and refine workflow
+**Build Status:** ✓ Compiling successfully
 
-**Ready for Production:** ✅ Yes - skill is ready to use
+**Production Ready:** ⏳ Mobile optimization + activity logging remaining
+
+**Git Status:** ✓ Committed to `feature/stacean-v2-kv-kanban`, pushed to origin
+
+---
+
+## Design Decisions
+
+| Decision | Why |
+|----------|-----|
+| **KV over SQLite** | Vercel auto-sync, no DB setup required |
+| **@hello-pangea/dnd** | Best React drag-drop library |
+| **Tap-modal for mobile** | dnd doesn't work well on touch devices |
+| **Status mapping** | Map KV statuses to UI columns |
+
+---
+
+## Next Immediate Steps
+
+1. **Mobile Optimization:**
+   - Create bead for mobile DnD
+   - Implement tap → modal → status dropdown
+   - Test on mobile device
+
+2. **Activity Logging:**
+   - Store activities in task metadata (KV)
+   - Fetch from KV in TaskModal
+   - Show timeline in Activity tab
+
+3. **SSE/Polling:**
+   - Poll KV for task updates
+   - Update UI without page refresh
+   - Consider SSE if needed for scale
+
+4. **Final Polish:**
+   - Apply frontend skill styling
+   - Test all workflows
+   - Deploy to Vercel
+
+---
+
+**Previous State:** Fleet Commander Integration (archived to `memory/2026-01-29.md`)
