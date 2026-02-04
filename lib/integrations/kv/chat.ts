@@ -74,7 +74,8 @@ export class ChatAdapter extends KVAdapter {
     }
 
     // Get message IDs from sorted set (chronological order, oldest first)
-    const ids = await kv.zrange(this.key(timelineKey), minScore, '+inf', { byScore: true }) as string[];
+    // Note: Using Number.MAX_SAFE_INTEGER instead of '+inf' for compatibility
+    const ids = await kv.zrange(this.key(timelineKey), minScore, Number.MAX_SAFE_INTEGER, { byScore: true }) as string[];
     
     if (!ids || ids.length === 0) return [];
 
