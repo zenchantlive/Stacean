@@ -6,53 +6,17 @@ import {
   deleteIssue as beadsDeleteIssue,
   closeIssue as beadsCloseIssue,
 } from '@/lib/integrations/beads/client';
+import type { Task, TaskStatus, TaskPriority, TaskActivity, CreateTaskInput, UpdateTaskInput } from '@/types/task';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export type TaskStatus = 'todo' | 'active' | 'needs-you' | 'ready' | 'shipped';
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type { Task, TaskStatus, TaskPriority, TaskActivity, CreateTaskInput, UpdateTaskInput };
 
 export interface TaskContext {
   files: string[];
   logs: string[];
 }
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  assignedTo?: string; // Agent Session ID or 'JORDAN'
-  agentCodeName?: string; // "Neon-Hawk"
-  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
-  parentId?: string;
+export interface TaskWithContext extends Task {
   context: TaskContext;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface CreateTaskInput {
-  title: string;
-  description: string;
-  priority?: TaskPriority; // Default: medium
-  parentId?: string;
-  assignedTo?: string;
-  agentCodeName?: string;
-  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
-}
-
-export interface UpdateTaskInput {
-  title?: string;
-  description?: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  assignedTo?: string;
-  parentId?: string;
-  project?: string; // For project filtering (e.g., "clawd", "asset-hatch")
-  context?: Partial<TaskContext>;
 }
 
 // ============================================================================
@@ -69,7 +33,17 @@ export class TaskTrackerAdapter extends KVAdapter {
    */
   async createTask(input: CreateTaskInput): Promise<Task> {
     const id = randomUUID();
-    const now = Date.now();
+    const now = new Date().toISOString();
+    
+    // Create initial activity
+    const activities: TaskActivity[] = [
+      {
+        id: `act-${Date.now()}`,
+        timestamp: now,
+        type: 'created',
+        details: `Task created: ${input.title}`,
+      },
+    ];
     
     const task: Task = {
       id,
@@ -79,13 +53,10 @@ export class TaskTrackerAdapter extends KVAdapter {
       priority: input.priority || 'medium',
       assignedTo: input.assignedTo,
       agentCodeName: input.agentCodeName,
-      parentId: input.parentId,
-      context: {
-        files: [],
-        logs: [],
-      },
+      project: input.project,
       createdAt: now,
       updatedAt: now,
+      activities,
     };
 
     await this.set(id, task);
@@ -113,11 +84,7 @@ export class TaskTrackerAdapter extends KVAdapter {
     const updated: Task = {
       ...existing,
       ...updates,
-      context: {
-        ...existing.context,
-        ...(updates.context || {}),
-      },
-      updatedAt: Date.now(),
+      updatedAt: new Date().toISOString(),
     };
 
     await this.set(id, updated);
@@ -129,32 +96,41 @@ export class TaskTrackerAdapter extends KVAdapter {
   }
 
   /**
+   * Add an activity to a task
+   */
+  async addActivity(taskId: string, activity: TaskActivity): Promise<Task | null> {
+    const existing = await this.getTask(taskId);
+    if (!existing) return null;
+
+    const updated: Task = {
+      ...existing,
+      activities: [activity, ...(existing.activities || [])],
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.set(taskId, updated);
+
+    return updated;
+  }
+
+  /**
    * List all tasks
    * Note: Uses KEYS command, might be slow if millions of tasks.
-   * For the Tracker scale, this is acceptable.
+   * For Tracker scale, this is acceptable.
    */
   async listTasks(): Promise<Task[]> {
-    // The prefix in the adapter includes the colon? 
-    // In KVAdapter: key(suffix) => `${this.prefix}:${suffix}`
-    // So our prefix is 'tracker:task'
-    // Keys will be 'tracker:task:UUID'
-    
-    // We need to find keys starting with 'tracker:task:'
     const pattern = `${this.getPrefix()}:*`;
     
     try {
       const keys = await kv.keys(pattern);
       if (!keys || keys.length === 0) return [];
 
-      // Fetch all values in parallel
-      // kv.mget requires full keys
-      // Vercel KV mget returns array of values
       if (keys.length === 0) return [];
       
       const values = await kv.mget<Task>(...keys);
       
-      // Filter out nulls if any
-      return values.filter(t => t !== null) as Task[];
+      // Filter out nulls and deleted tasks
+      return values.filter(t => t !== null && t.status !== 'deleted') as Task[];
     } catch (error) {
       console.error('TaskTracker listTasks error:', error);
       return [];
@@ -162,17 +138,37 @@ export class TaskTrackerAdapter extends KVAdapter {
   }
 
   /**
-   * Delete a task
+   * Delete a task (soft delete by setting status to deleted)
    */
   async deleteTask(id: string): Promise<boolean> {
-    // Fetch task first for mirroring
+    const task = await this.getTask(id);
+    if (!task) return false;
+
+    // Soft delete
+    const deleted: Task = {
+      ...task,
+      status: 'deleted',
+      deletedAt: new Date().toISOString(),
+    };
+
+    await this.set(id, deleted);
+
+    // Mirror to Beads (best-effort, fails silently on Vercel)
+    await mirrorToBeads('delete', task).catch(() => {});
+
+    return true;
+  }
+
+  /**
+   * Hard delete a task from KV
+   */
+  async hardDeleteTask(id: string): Promise<boolean> {
     const task = await this.getTask(id);
     if (!task) return false;
 
     const success = await this.delete(id);
 
     if (success) {
-      // Mirror to Beads (best-effort, fails silently on Vercel)
       await mirrorToBeads('delete', task).catch(() => {});
     }
 
@@ -192,10 +188,13 @@ export const taskTracker = new TaskTrackerAdapter();
  */
 const BEADS_STATUS_MAP: Record<TaskStatus, string> = {
   'todo': 'open',
-  'active': 'agent_working',
+  'assigned': 'agent_working',
+  'in_progress': 'agent_working',
   'needs-you': 'needs_jordan',
   'ready': 'ready_to_commit',
+  'review': 'in_review',
   'shipped': 'pushed',
+  'deleted': 'deleted',
 };
 
 const BEADS_PRIORITY_MAP: Record<TaskPriority, number> = {

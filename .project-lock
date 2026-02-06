@@ -4,6 +4,11 @@
 NAME: stacean-repo
 ROOT: /home/clawdbot/stacean-repo
 
+# Git settings (for correct push target)
+GIT_REMOTE: github.com/jordan/stacean-repo
+PUSH_TARGET: origin
+BRANCH: main
+
 IGNORE:
   - node_modules/
   - .vercel/
