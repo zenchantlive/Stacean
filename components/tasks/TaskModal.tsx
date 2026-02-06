@@ -101,6 +101,7 @@ export function TaskModal({ task: initialTask, onClose, onUpdate, onStatusChange
   // Track status change for activity log
   const handleStatusChange = (newStatus: string) => {
     const status = newStatus as import('@/types/task').TaskStatus;
+    const taskId = localTask.id;  // ✅ FIXED: Capture ID before state update
     const oldStatus = STATUS_OPTIONS.find(s => s.value === localTask.status)?.label || localTask.status;
     const newStatusLabel = STATUS_OPTIONS.find(s => s.value === status)?.label || status;
     
@@ -124,9 +125,9 @@ export function TaskModal({ task: initialTask, onClose, onUpdate, onStatusChange
       activities: updatedTask.activities,
     });
     
-    // Also call onStatusChange for mobile parent component
+    // Also call onStatusChange for mobile parent component (use captured ID)
     if (onStatusChange) {
-      onStatusChange(localTask.id, status);
+      onStatusChange(taskId, status);
     }
   };
 

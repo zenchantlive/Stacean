@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Plus, Settings } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
@@ -27,15 +27,13 @@ const COLUMNS = [
   { id: 'shipped' as TaskStatus, title: 'SHIPPED', color: '#10B981' },
 ];
 
-const STATUS_OPTIONS = [
-  { value: 'todo', label: 'TODO', color: '#71717A' },
-  { value: 'assigned', label: 'ASSIGNED', color: '#3B82F6' },
-  { value: 'in_progress', label: 'IN PROGRESS', color: '#F97316' },
-  { value: 'needs-you', label: 'NEEDS YOU', color: '#F59E0B' },
-  { value: 'ready', label: 'READY', color: '#22C55E' },
-  { value: 'review', label: 'REVIEW', color: '#8B5CF6' },
-  { value: 'shipped', label: 'SHIPPED', color: '#10B981' },
-];
+// Priority colors from CSS variables
+const PRIORITY_COLORS: Record<string, string> = {
+  urgent: 'var(--priority-urgent, #EF4444)',
+  high: 'var(--priority-high, #F97316)',
+  medium: 'var(--priority-medium, #3B82F6)',
+  low: 'var(--priority-low, #71717A)',
+};
 
 export function KanbanBoard({
   initialTasks,
@@ -49,7 +47,9 @@ export function KanbanBoard({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [dragDisabled, setDragDisabled] = useState(false);
+  
+  // Refs for mobile scroll elements
+  const columnRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Detect mobile device
   useEffect(() => {
@@ -57,7 +57,6 @@ export function KanbanBoard({
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       const isSmallScreen = window.innerWidth < 768;
       setIsMobile(isTouchDevice || isSmallScreen);
-      setDragDisabled(isTouchDevice || isSmallScreen);
     };
     
     checkMobile();
@@ -74,20 +73,17 @@ export function KanbanBoard({
     setTasks(initialTasks);
   }, [initialTasks]);
 
-  // Mobile: tap to open status selector, long-press to drag
+  // Mobile: tap to open status selector
   const handleTaskTap = useCallback((taskId: string) => {
-    // On mobile, tap opens the modal directly
     const task = tasks.find(t => t.id === taskId);
     if (task) {
       setSelectedTask(task);
-      if (onTaskClick) {
-        onTaskClick(taskId);
-      }
+      onTaskClick?.(taskId);
     }
   }, [tasks, onTaskClick]);
 
-  // Handle task move (for mobile, called from modal status change)
-  const handleTaskStatusChange = useCallback(async (taskId: string, newStatus: TaskStatus) => {
+  // Handle task status change (for mobile, called from modal)
+  const handleTaskStatusChange = useCallback((taskId: string, newStatus: TaskStatus) => {
     setTasks(prev => prev.map(t => 
       t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
     ));
@@ -119,7 +115,6 @@ export function KanbanBoard({
         return;
       }
 
-      const sourceStatus = source.droppableId as TaskStatus;
       const destinationStatus = destination.droppableId as TaskStatus;
 
       // Find task
@@ -127,22 +122,15 @@ export function KanbanBoard({
       const task = tasks[taskIndex];
       if (!task) return;
 
-      // Create optimistic updated task
+      // Optimistic UI update
       const updatedTask = {
         ...task,
         status: destinationStatus,
         updatedAt: new Date().toISOString(),
       };
 
-      // Optimistic UI update
       const newTasks = Array.from(tasks);
       newTasks.splice(taskIndex, 1);
-
-      // Calculate new index in destination column
-      const destinationColumnTasks = newTasks.filter(
-        (t) => t.status === destinationStatus
-      );
-      const newIndex = Math.min(destination.index, destinationColumnTasks.length);
       newTasks.splice(taskIndex, 0, updatedTask);
 
       setTasks(newTasks);
@@ -156,9 +144,7 @@ export function KanbanBoard({
   );
 
   const getColumnTasks = useCallback(
-    (status: TaskStatus) => {
-      return tasks.filter((t) => t.status === status);
-    },
+    (status: TaskStatus) => tasks.filter((t) => t.status === status),
     [tasks]
   );
 
@@ -166,19 +152,30 @@ export function KanbanBoard({
   const completedTasks = getColumnTasks('shipped').length;
   const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  // Mobile column render - stacked view
-  const renderMobileColumns = () => {
-    return (
+  // Scroll to column (memoized to avoid re-renders)
+  const scrollToColumn = useCallback((columnId: string) => {
+    const el = columnRefs.current.get(columnId);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  // Mobile column render - memoized
+  const renderMobileColumns = useMemo(() => {
+    return () => (
       <div className="flex flex-col gap-4">
         {COLUMNS.map((column) => (
-          <div key={column.id} className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden">
+          <div 
+            key={column.id} 
+            className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden"
+            ref={(el) => {
+              if (el) columnRefs.current.set(column.id, el);
+              else columnRefs.current.delete(column.id);
+            }}
+          >
             {/* Column Header - touch friendly */}
             <button
               className="w-full flex items-center justify-between p-4 bg-[var(--bg-tertiary)] touch-manipulation"
-              onClick={() => {
-                const el = document.getElementById(`mobile-col-${column.id}`);
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => scrollToColumn(column.id)}
+              aria-label={`Go to ${column.title} column`}
             >
               <div className="flex items-center gap-2">
                 <div
@@ -186,19 +183,19 @@ export function KanbanBoard({
                   style={{ backgroundColor: column.color }}
                 />
                 <span className="font-semibold text-sm uppercase tracking-wider text-[var(--text-primary)]">
-                  {title}
+                  {column.title}  {/* ✅ FIXED: was 'title' (outer scope bug) */}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="bg-[var(--bg-primary)] px-2 py-0.5 rounded-full text-xs font-bold">
                   {getColumnTasks(column.id).length}
                 </span>
-                <span className="text-[var(--text-muted)]">→</span>
+                <span className="text-[var(--text-muted)]" aria-hidden="true">→</span>
               </div>
             </button>
             
             {/* Tasks - full width cards */}
-            <div id={`mobile-col-${column.id}`} className="p-3 space-y-3">
+            <div className="p-3 space-y-3">
               {getColumnTasks(column.id).map((task) => (
                 <div
                   key={task.id}
@@ -208,6 +205,10 @@ export function KanbanBoard({
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation'
                   }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleTaskTap(task.id)}
+                  aria-label={`Task: ${task.title}`}
                 >
                   <div className="flex justify-between items-start gap-3">
                     <h4 className="font-semibold text-sm text-[var(--text-primary)]">
@@ -216,10 +217,7 @@ export function KanbanBoard({
                     <div
                       className="w-1 h-8 rounded-full flex-shrink-0"
                       style={{
-                        backgroundColor: 
-                          task.priority === 'urgent' ? '#EF4444' :
-                          task.priority === 'high' ? '#F97316' :
-                          task.priority === 'medium' ? '#3B82F6' : '#71717A'
+                        backgroundColor: PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low
                       }}
                     />
                   </div>
@@ -252,7 +250,7 @@ export function KanbanBoard({
         ))}
       </div>
     );
-  };
+  }, [getColumnTasks, handleTaskTap, scrollToColumn]);
 
   return (
     <div className="flex h-full flex-col min-h-0">
@@ -292,7 +290,7 @@ export function KanbanBoard({
           </div>
         </div>
 
-        {/* Action Buttons - touch friendly on mobile */}
+        {/* Action Buttons - touch friendly */}
         <div className="flex items-center gap-2">
           <button
             onClick={onSettingsClick}
@@ -311,18 +309,18 @@ export function KanbanBoard({
         </div>
       </div>
 
-      {/* Mobile Toggle - Show different views */}
+      {/* Mobile Quick Nav */}
       {isMobile && (
         <div className="md:hidden px-3 py-2 bg-[var(--bg-secondary)] border-b border-[var(--bg-tertiary)]">
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Kanban columns">
             {COLUMNS.map((col) => (
               <button
                 key={col.id}
-                onClick={() => {
-                  const el = document.getElementById(`mobile-col-${col.id}`);
-                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
+                onClick={() => scrollToColumn(col.id)}
                 className="flex-shrink-0 px-3 py-1.5 bg-[var(--bg-tertiary)] rounded-full text-xs font-medium text-[var(--text-secondary)] whitespace-nowrap touch-manipulation"
+                role="tab"
+                aria-label={`${col.title} column with ${getColumnTasks(col.id).length} tasks`}
+                aria-selected="false"
               >
                 {col.title} ({getColumnTasks(col.id).length})
               </button>
@@ -333,7 +331,7 @@ export function KanbanBoard({
 
       {/* Board Content */}
       {isMobile ? (
-        // Mobile: Stacked column view
+        // Mobile: Stacked column view (no drag-drop)
         <div className="flex-1 overflow-y-auto p-3">
           {renderMobileColumns()}
         </div>
@@ -363,7 +361,7 @@ export function KanbanBoard({
         <TaskModal
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
-          onUpdate={(updates) => handleTaskUpdate(selectedTask.id, updates)}
+          onUpdate={(updates) => onTaskUpdate?.(selectedTask.id, updates)}
           onStatusChange={(taskId, newStatus) => handleTaskStatusChange(taskId, newStatus as TaskStatus)}
         />
       )}
