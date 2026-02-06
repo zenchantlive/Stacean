@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Clock, User, Tag, MessageSquare, File, CheckCircle, ChevronDown, History, Bot } from 'lucide-react';
 import type { Task, TaskActivity } from '@/types/task';
 
@@ -83,15 +83,15 @@ export function TaskModal({ task: initialTask, onClose, onUpdate, onStatusChange
     }
   }, [activeTab]);
 
-  // Handle escape key
-  const handleEscape = (e: KeyboardEvent) => {
+  // Handle escape key - stable callback
+  const handleEscape = useCallback((e: KeyboardEvent): void => {
     if (e.key === 'Escape') onClose();
-  };
+  }, [onClose]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
+    return (): void => window.removeEventListener('keydown', handleEscape);
+  }, [handleEscape]);
 
   // Handle backdrop click
   const handleBackdropClick = (e: React.MouseEvent) => {

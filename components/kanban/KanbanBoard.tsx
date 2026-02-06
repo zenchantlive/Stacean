@@ -6,7 +6,7 @@ import { Plus, Settings } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskModal } from '../tasks/TaskModal';
 import { SSEStatusIndicator } from '../common/SSEStatusIndicator';
-import { Task, TaskStatus } from '@/types/task';
+import type { Task, TaskStatus } from '@/types/task';
 
 interface KanbanBoardProps {
   initialTasks: Task[];
@@ -17,18 +17,23 @@ interface KanbanBoardProps {
   onSettingsClick?: () => void;
 }
 
-const COLUMNS = [
-  { id: 'todo' as TaskStatus, title: 'TODO', color: '#A1A1AA' },
-  { id: 'assigned' as TaskStatus, title: 'ASSIGNED', color: '#3B82F6' },
-  { id: 'in_progress' as TaskStatus, title: 'IN PROGRESS', color: '#F97316' },
-  { id: 'needs-you' as TaskStatus, title: 'NEEDS YOU', color: '#F59E0B' },
-  { id: 'ready' as TaskStatus, title: 'READY', color: '#22C55E' },
-  { id: 'review' as TaskStatus, title: 'REVIEW', color: '#8B5CF6' },
-  { id: 'shipped' as TaskStatus, title: 'SHIPPED', color: '#10B981' },
+interface Column {
+  id: TaskStatus;
+  title: string;
+  color: string;
+}
+
+const COLUMNS: Column[] = [
+  { id: 'todo', title: 'TODO', color: '#A1A1AA' },
+  { id: 'assigned', title: 'ASSIGNED', color: '#3B82F6' },
+  { id: 'in_progress', title: 'IN PROGRESS', color: '#F97316' },
+  { id: 'needs-you', title: 'NEEDS YOU', color: '#F59E0B' },
+  { id: 'ready', title: 'READY', color: '#22C55E' },
+  { id: 'review', title: 'REVIEW', color: '#8B5CF6' },
+  { id: 'shipped', title: 'SHIPPED', color: '#10B981' },
 ];
 
-// Priority colors from CSS variables
-const PRIORITY_COLORS: Record<string, string> = {
+const PRIORITY_COLORS: Record<NonNullable<Task['priority']>, string> = {
   urgent: 'var(--priority-urgent, #EF4444)',
   high: 'var(--priority-high, #F97316)',
   medium: 'var(--priority-medium, #3B82F6)',
@@ -42,18 +47,16 @@ export function KanbanBoard({
   onTaskUpdate,
   onCreateTask,
   onSettingsClick,
-}: KanbanBoardProps) {
+}: KanbanBoardProps): React.ReactElement {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Refs for mobile scroll elements
+  const [isMobile, setIsMobile] = useState<boolean>(false);
   const columnRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Detect mobile device
   useEffect(() => {
-    const checkMobile = () => {
+    const checkMobile = (): void => {
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       const isSmallScreen = window.innerWidth < 768;
       setIsMobile(isTouchDevice || isSmallScreen);
@@ -62,7 +65,7 @@ export function KanbanBoard({
     checkMobile();
     window.addEventListener('resize', checkMobile);
     window.addEventListener('orientationchange', checkMobile);
-    return () => {
+    return (): void => {
       window.removeEventListener('resize', checkMobile);
       window.removeEventListener('orientationchange', checkMobile);
     };
@@ -74,8 +77,8 @@ export function KanbanBoard({
   }, [initialTasks]);
 
   // Mobile: tap to open status selector
-  const handleTaskTap = useCallback((taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
+  const handleTaskTap = useCallback((taskId: string): void => {
+    const task = tasks.find((t): boolean => t.id === taskId);
     if (task) {
       setSelectedTask(task);
       onTaskClick?.(taskId);
@@ -83,8 +86,8 @@ export function KanbanBoard({
   }, [tasks, onTaskClick]);
 
   // Handle task status change (for mobile, called from modal)
-  const handleTaskStatusChange = useCallback((taskId: string, newStatus: TaskStatus) => {
-    setTasks(prev => prev.map(t => 
+  const handleTaskStatusChange = useCallback((taskId: string, newStatus: TaskStatus): void => {
+    setTasks((prev): Task[] => prev.map((t): Task => 
       t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
     ));
 
@@ -93,37 +96,29 @@ export function KanbanBoard({
     }
   }, [onTaskUpdate]);
 
-  const onDragStart = useCallback((start: { draggableId: string }) => {
-    const task = tasks.find((t) => t.id === start.draggableId);
-    setDraggedTask(task || null);
+  const onDragStart = useCallback((start: { draggableId: string }): void => {
+    const task = tasks.find((t): boolean => t.id === start.draggableId);
+    setDraggedTask(task ?? null);
   }, [tasks]);
 
   const onDragEnd = useCallback(
-    (result: DropResult) => {
+    (result: DropResult): void => {
       setDraggedTask(null);
 
-      const { destination, source, draggableId } = result;
+      const { destination, draggableId } = result;
 
       // Dropped outside any column
       if (!destination) return;
 
-      // Dropped in same position
-      if (
-        destination.droppableId === source.droppableId &&
-        destination.index === source.index
-      ) {
-        return;
-      }
-
       const destinationStatus = destination.droppableId as TaskStatus;
 
       // Find task
-      const taskIndex = tasks.findIndex((t) => t.id === draggableId);
+      const taskIndex = tasks.findIndex((t): boolean => t.id === draggableId);
       const task = tasks[taskIndex];
       if (!task) return;
 
       // Optimistic UI update
-      const updatedTask = {
+      const updatedTask: Task = {
         ...task,
         status: destinationStatus,
         updatedAt: new Date().toISOString(),
@@ -144,7 +139,7 @@ export function KanbanBoard({
   );
 
   const getColumnTasks = useCallback(
-    (status: TaskStatus) => tasks.filter((t) => t.status === status),
+    (status: TaskStatus): Task[] => tasks.filter((t): boolean => t.status === status),
     [tasks]
   );
 
@@ -152,29 +147,30 @@ export function KanbanBoard({
   const completedTasks = getColumnTasks('shipped').length;
   const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  // Scroll to column (memoized to avoid re-renders)
-  const scrollToColumn = useCallback((columnId: string) => {
+  // Scroll to column
+  const scrollToColumn = useCallback((columnId: string): void => {
     const el = columnRefs.current.get(columnId);
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   // Mobile column render - memoized
-  const renderMobileColumns = useMemo(() => {
-    return () => (
+  const mobileColumns = useMemo((): React.ReactNode => {
+    return (
       <div className="flex flex-col gap-4">
-        {COLUMNS.map((column) => (
+        {COLUMNS.map((column): React.ReactNode => (
           <div 
-            key={column.id} 
+            key={column.id}
             className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden"
-            ref={(el) => {
+            ref={(el: HTMLDivElement | null): void => {
               if (el) columnRefs.current.set(column.id, el);
               else columnRefs.current.delete(column.id);
             }}
           >
             {/* Column Header - touch friendly */}
             <button
+              type="button"
               className="w-full flex items-center justify-between p-4 bg-[var(--bg-tertiary)] touch-manipulation"
-              onClick={() => scrollToColumn(column.id)}
+              onClick={(): void => scrollToColumn(column.id)}
               aria-label={`Go to ${column.title} column`}
             >
               <div className="flex items-center gap-2">
@@ -183,7 +179,7 @@ export function KanbanBoard({
                   style={{ backgroundColor: column.color }}
                 />
                 <span className="font-semibold text-sm uppercase tracking-wider text-[var(--text-primary)]">
-                  {column.title}  {/* ✅ FIXED: was 'title' (outer scope bug) */}
+                  {column.title}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -196,10 +192,16 @@ export function KanbanBoard({
             
             {/* Tasks - full width cards */}
             <div className="p-3 space-y-3">
-              {getColumnTasks(column.id).map((task) => (
+              {getColumnTasks(column.id).map((task): React.ReactNode => (
                 <div
                   key={task.id}
-                  onClick={() => handleTaskTap(task.id)}
+                  onClick={(): void => handleTaskTap(task.id)}
+                  onKeyDown={(e: React.KeyboardEvent): void => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleTaskTap(task.id);
+                    }
+                  }}
                   className="bg-[var(--bg-primary)] p-4 rounded-xl border border-[var(--bg-tertiary)] cursor-pointer active:bg-[var(--bg-hover)] transition-all touch-manipulation"
                   style={{ 
                     WebkitTapHighlightColor: 'transparent',
@@ -207,7 +209,6 @@ export function KanbanBoard({
                   }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && handleTaskTap(task.id)}
                   aria-label={`Task: ${task.title}`}
                 >
                   <div className="flex justify-between items-start gap-3">
@@ -217,7 +218,7 @@ export function KanbanBoard({
                     <div
                       className="w-1 h-8 rounded-full flex-shrink-0"
                       style={{
-                        backgroundColor: PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low
+                        backgroundColor: PRIORITY_COLORS[task.priority ?? 'low']
                       }}
                     />
                   </div>
@@ -293,6 +294,7 @@ export function KanbanBoard({
         {/* Action Buttons - touch friendly */}
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={onSettingsClick}
             className="p-2.5 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200 touch-manipulation"
             aria-label="Settings"
@@ -300,6 +302,7 @@ export function KanbanBoard({
             <Settings size={18} />
           </button>
           <button
+            type="button"
             onClick={onCreateTask}
             className="flex items-center gap-2 px-4 py-2.5 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] hover:shadow-lg hover:shadow-[var(--accent)]/30 transition-all duration-200 font-medium text-sm touch-manipulation"
           >
@@ -313,14 +316,14 @@ export function KanbanBoard({
       {isMobile && (
         <div className="md:hidden px-3 py-2 bg-[var(--bg-secondary)] border-b border-[var(--bg-tertiary)]">
           <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Kanban columns">
-            {COLUMNS.map((col) => (
+            {COLUMNS.map((col): React.ReactNode => (
               <button
                 key={col.id}
-                onClick={() => scrollToColumn(col.id)}
+                type="button"
+                onClick={(): void => scrollToColumn(col.id)}
                 className="flex-shrink-0 px-3 py-1.5 bg-[var(--bg-tertiary)] rounded-full text-xs font-medium text-[var(--text-secondary)] whitespace-nowrap touch-manipulation"
                 role="tab"
                 aria-label={`${col.title} column with ${getColumnTasks(col.id).length} tasks`}
-                aria-selected="false"
               >
                 {col.title} ({getColumnTasks(col.id).length})
               </button>
@@ -333,14 +336,14 @@ export function KanbanBoard({
       {isMobile ? (
         // Mobile: Stacked column view (no drag-drop)
         <div className="flex-1 overflow-y-auto p-3">
-          {renderMobileColumns()}
+          {mobileColumns}
         </div>
       ) : (
         // Desktop: Drag-drop Kanban
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <div className="flex-1 overflow-x-auto pb-6 min-w-0">
             <div className="flex gap-4 min-h-0 px-6 py-4">
-              {COLUMNS.map((column) => (
+              {COLUMNS.map((column): React.ReactNode => (
                 <KanbanColumn
                   key={column.id}
                   id={column.id}
@@ -360,9 +363,9 @@ export function KanbanBoard({
       {selectedTask && (
         <TaskModal
           task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onUpdate={(updates) => onTaskUpdate?.(selectedTask.id, updates)}
-          onStatusChange={(taskId, newStatus) => handleTaskStatusChange(taskId, newStatus as TaskStatus)}
+          onClose={(): void => setSelectedTask(null)}
+          onUpdate={(updates): void => onTaskUpdate?.(selectedTask.id, updates)}
+          onStatusChange={(taskId, newStatus): void => handleTaskStatusChange(taskId, newStatus as TaskStatus)}
         />
       )}
 
@@ -386,3 +389,5 @@ export function KanbanBoard({
     </div>
   );
 }
+
+KanbanBoard.displayName = 'KanbanBoard';
