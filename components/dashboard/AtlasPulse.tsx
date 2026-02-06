@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import type { ReactElement } from "react";
 import { Activity, Zap } from "lucide-react";
 
 interface AtlasState {
@@ -11,10 +12,10 @@ interface AtlasState {
   atlasOnline?: boolean;
   currentActivity?: string;
   lastHeartbeat?: string;
-  _note?: string; // Present when using fallback state
+  _note?: string;
 }
 
-export function AtlasPulse() {
+export function AtlasPulse(): React.ReactElement | null {
   const [state, setState] = useState<AtlasState | null>(null);
   const [kvConnected, setKvConnected] = useState(false);
 

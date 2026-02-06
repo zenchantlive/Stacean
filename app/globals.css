@@ -924,37 +924,65 @@ body {
   }
 }
 
-/* ============================================
-   Desktop Styles (1024px+ breakpoint)
-   ============================================ */
-
-@media (min-width: 1025px) {
-  .kanban {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* ============================================
-   Show mobile elements on small screens
-   ============================================ */
-
-@media (max-width: 768px) {
-  .mobile-header,
-  .mobile-sidebar-overlay,
-  .mobile-sidebar,
-  .mobile-nav {
-    display: flex;
-  }
-
   .view-header {
-    flex-direction: horizontal;
+    flex-direction: column;
     align-items: stretch;
     gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
   }
+}
 
-/* ============================================ */
-/* 
-   Critical fix: Remove ALL hardcoded px values
-   Use relative units (rem, em, %, vh, vw) throughout
-*/
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.view-header-left h2 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.view-header-left p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.chat-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.chat-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
