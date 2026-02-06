@@ -8,6 +8,7 @@ interface TaskModalProps {
   task: Task;
   onClose: () => void;
   onUpdate: (updates: Partial<Task>) => void;
+  onStatusChange?: (taskId: string, newStatus: string) => void;
 }
 
 type TabType = 'overview' | 'activity' | 'sub_agents' | 'deliverables';
@@ -62,7 +63,7 @@ function formatFullTime(timestamp: string) {
   });
 }
 
-export function TaskModal({ task: initialTask, onClose, onUpdate }: TaskModalProps) {
+export function TaskModal({ task: initialTask, onClose, onUpdate, onStatusChange }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [localTask, setLocalTask] = useState<Task>(initialTask);
   const [newComment, setNewComment] = useState('');
@@ -122,6 +123,11 @@ export function TaskModal({ task: initialTask, onClose, onUpdate }: TaskModalPro
       status: status, 
       activities: updatedTask.activities,
     });
+    
+    // Also call onStatusChange for mobile parent component
+    if (onStatusChange) {
+      onStatusChange(localTask.id, status);
+    }
   };
 
   // Track priority change for activity log
@@ -231,17 +237,17 @@ export function TaskModal({ task: initialTask, onClose, onUpdate }: TaskModalPro
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+      <div className="bg-[#18181B] border border-[#27272A] rounded-t-2xl sm:rounded-2xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-slide-up sm:animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#27272A] flex-shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#27272A] flex-shrink-0">
           <div className="flex-1 min-w-0 mr-4">
-            <h2 className="text-lg font-semibold text-white truncate">
+            <h2 className="text-base sm:text-lg font-semibold text-white truncate">
               {localTask.title}
             </h2>
-            <p className="text-[#71717A] text-sm mt-1">
+            <p className="text-[#71717A] text-xs sm:text-sm mt-1">
               Updated {formatTime(localTask.updatedAt)}
             </p>
           </div>
@@ -433,20 +439,20 @@ export function TaskModal({ task: initialTask, onClose, onUpdate }: TaskModalPro
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-[#27272A] bg-[#09090B] flex-shrink-0">
-          <div className="text-[#71717A] text-sm">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-t border-[#27272A] bg-[#09090B] flex-shrink-0">
+          <div className="text-[#71717A] text-xs sm:text-sm">
             Task ID: {localTask.id}
           </div>
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-[#18181B] border border-[#27272A] rounded-lg text-white text-sm font-medium hover:bg-[#27272A] transition-colors"
+              className="px-6 py-2.5 bg-[#18181B] border border-[#27272A] rounded-lg text-white text-sm font-medium hover:bg-[#27272A] transition-colors touch-manipulation"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-6 py-2 bg-[#F97316] rounded-lg text-white text-sm font-medium hover:bg-[#EA580C] transition-colors"
+              className="px-6 py-2.5 bg-[#F97316] rounded-lg text-white text-sm font-medium hover:bg-[#EA580C] transition-colors touch-manipulation"
             >
               Save Changes
             </button>

@@ -49,17 +49,24 @@ export function KanbanBoard({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [dragDisabled, setDragDisabled] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      setIsMobile(isTouchDevice);
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobile(isTouchDevice || isSmallScreen);
+      setDragDisabled(isTouchDevice || isSmallScreen);
     };
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener('orientationchange', checkMobile);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('orientationchange', checkMobile);
+    };
   }, []);
 
   // Sync tasks when initialTasks change
@@ -67,26 +74,9 @@ export function KanbanBoard({
     setTasks(initialTasks);
   }, [initialTasks]);
 
-  // Handle task update from modal
-  const handleTaskUpdate = useCallback((taskId: string, updates: Partial<Task>) => {
-    // Optimistic update
-    setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
-    ));
-
-    // Call external handler
-    if (onTaskUpdate) {
-      onTaskUpdate(taskId, updates);
-    }
-
-    // Update selected task if it's the one being edited
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask(prev => prev ? { ...prev, ...updates, updatedAt: new Date().toISOString() } : null);
-    }
-  }, [onTaskUpdate, selectedTask]);
-
-  // Handle task click (for modal)
-  const handleTaskClickInternal = useCallback((taskId: string) => {
+  // Mobile: tap to open status selector, long-press to drag
+  const handleTaskTap = useCallback((taskId: string) => {
+    // On mobile, tap opens the modal directly
     const task = tasks.find(t => t.id === taskId);
     if (task) {
       setSelectedTask(task);
@@ -96,13 +86,16 @@ export function KanbanBoard({
     }
   }, [tasks, onTaskClick]);
 
-  // Handle delete with modal
-  const handleTaskDeleteInternal = useCallback((taskId: string) => {
-    setSelectedTask(null);
-    if (onTaskDelete) {
-      onTaskDelete(taskId);
+  // Handle task move (for mobile, called from modal status change)
+  const handleTaskStatusChange = useCallback(async (taskId: string, newStatus: TaskStatus) => {
+    setTasks(prev => prev.map(t => 
+      t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
+    ));
+
+    if (onTaskUpdate) {
+      onTaskUpdate(taskId, { status: newStatus });
     }
-  }, [onTaskDelete]);
+  }, [onTaskUpdate]);
 
   const onDragStart = useCallback((start: { draggableId: string }) => {
     const task = tasks.find((t) => t.id === start.draggableId);
@@ -173,6 +166,94 @@ export function KanbanBoard({
   const completedTasks = getColumnTasks('shipped').length;
   const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
+  // Mobile column render - stacked view
+  const renderMobileColumns = () => {
+    return (
+      <div className="flex flex-col gap-4">
+        {COLUMNS.map((column) => (
+          <div key={column.id} className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden">
+            {/* Column Header - touch friendly */}
+            <button
+              className="w-full flex items-center justify-between p-4 bg-[var(--bg-tertiary)] touch-manipulation"
+              onClick={() => {
+                const el = document.getElementById(`mobile-col-${column.id}`);
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: column.color }}
+                />
+                <span className="font-semibold text-sm uppercase tracking-wider text-[var(--text-primary)]">
+                  {title}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="bg-[var(--bg-primary)] px-2 py-0.5 rounded-full text-xs font-bold">
+                  {getColumnTasks(column.id).length}
+                </span>
+                <span className="text-[var(--text-muted)]">→</span>
+              </div>
+            </button>
+            
+            {/* Tasks - full width cards */}
+            <div id={`mobile-col-${column.id}`} className="p-3 space-y-3">
+              {getColumnTasks(column.id).map((task) => (
+                <div
+                  key={task.id}
+                  onClick={() => handleTaskTap(task.id)}
+                  className="bg-[var(--bg-primary)] p-4 rounded-xl border border-[var(--bg-tertiary)] cursor-pointer active:bg-[var(--bg-hover)] transition-all touch-manipulation"
+                  style={{ 
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation'
+                  }}
+                >
+                  <div className="flex justify-between items-start gap-3">
+                    <h4 className="font-semibold text-sm text-[var(--text-primary)]">
+                      {task.title}
+                    </h4>
+                    <div
+                      className="w-1 h-8 rounded-full flex-shrink-0"
+                      style={{
+                        backgroundColor: 
+                          task.priority === 'urgent' ? '#EF4444' :
+                          task.priority === 'high' ? '#F97316' :
+                          task.priority === 'medium' ? '#3B82F6' : '#71717A'
+                      }}
+                    />
+                  </div>
+                  {task.description && (
+                    <p className="text-xs text-[var(--text-muted)] mt-2 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--bg-tertiary)]">
+                    <div className="flex items-center gap-2">
+                      {task.agentCodeName && (
+                        <span className="text-xs bg-[var(--bg-tertiary)] px-2 py-1 rounded text-[var(--text-secondary)]">
+                          {task.agentCodeName}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      Tap to change status →
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {getColumnTasks(column.id).length === 0 && (
+                <div className="text-center py-6 text-[var(--text-muted)] text-sm">
+                  No tasks
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-full flex-col min-h-0">
       {/* Header Bar */}
@@ -211,18 +292,18 @@ export function KanbanBoard({
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - touch friendly on mobile */}
         <div className="flex items-center gap-2">
           <button
             onClick={onSettingsClick}
-            className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200"
+            className="p-2.5 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200 touch-manipulation"
             aria-label="Settings"
           >
             <Settings size={18} />
           </button>
           <button
             onClick={onCreateTask}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] hover:shadow-lg hover:shadow-[var(--accent)]/30 transition-all duration-200 font-medium text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] hover:shadow-lg hover:shadow-[var(--accent)]/30 transition-all duration-200 font-medium text-sm touch-manipulation"
           >
             <Plus size={16} />
             New Task
@@ -230,24 +311,52 @@ export function KanbanBoard({
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto pb-6 min-w-0">
-          <div className="flex gap-4 min-h-0 px-6 py-4">
-            {COLUMNS.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                color={column.color}
-                tasks={getColumnTasks(column.id)}
-                onTaskClick={handleTaskClickInternal}
-                onTaskDelete={handleTaskDeleteInternal}
-              />
+      {/* Mobile Toggle - Show different views */}
+      {isMobile && (
+        <div className="md:hidden px-3 py-2 bg-[var(--bg-secondary)] border-b border-[var(--bg-tertiary)]">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {COLUMNS.map((col) => (
+              <button
+                key={col.id}
+                onClick={() => {
+                  const el = document.getElementById(`mobile-col-${col.id}`);
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="flex-shrink-0 px-3 py-1.5 bg-[var(--bg-tertiary)] rounded-full text-xs font-medium text-[var(--text-secondary)] whitespace-nowrap touch-manipulation"
+              >
+                {col.title} ({getColumnTasks(col.id).length})
+              </button>
             ))}
           </div>
         </div>
-      </DragDropContext>
+      )}
+
+      {/* Board Content */}
+      {isMobile ? (
+        // Mobile: Stacked column view
+        <div className="flex-1 overflow-y-auto p-3">
+          {renderMobileColumns()}
+        </div>
+      ) : (
+        // Desktop: Drag-drop Kanban
+        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+          <div className="flex-1 overflow-x-auto pb-6 min-w-0">
+            <div className="flex gap-4 min-h-0 px-6 py-4">
+              {COLUMNS.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  id={column.id}
+                  title={column.title}
+                  color={column.color}
+                  tasks={getColumnTasks(column.id)}
+                  onTaskClick={handleTaskTap}
+                  onTaskDelete={onTaskDelete}
+                />
+              ))}
+            </div>
+          </div>
+        </DragDropContext>
+      )}
 
       {/* Task Modal */}
       {selectedTask && (
@@ -255,6 +364,7 @@ export function KanbanBoard({
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
           onUpdate={(updates) => handleTaskUpdate(selectedTask.id, updates)}
+          onStatusChange={(taskId, newStatus) => handleTaskStatusChange(taskId, newStatus as TaskStatus)}
         />
       )}
 
