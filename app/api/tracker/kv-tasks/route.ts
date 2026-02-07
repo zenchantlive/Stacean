@@ -7,29 +7,26 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const project = searchParams.get('project');
 
-    let taskIds;
-
-    if (project && project !== 'all') {
-      // Get tasks for specific project
-      taskIds = await kv.smembers(`beads:project:${project}`);
-    } else {
-      // Get all tasks
-      taskIds = await kv.smembers('beads:all');
-    }
+    const taskIds: string[] =
+      project && project !== 'all'
+        ? await kv.smembers(`beads:project:${project}`)
+        : await kv.smembers('beads:all');
 
     if (taskIds.length === 0) {
-      return NextResponse.json({ tasks: [], source: 'kv' });
+      return NextResponse.json({ tasks: [], source: 'kv', count: 0 });
     }
 
-    // Fetch all task data
-    const tasks = await Promise.all(
-      taskIds.map(id => kv.hgetall(`beads:task:${id}`))
-    );
+    // Fetch all task data using pipeline for better performance
+    const pipeline = kv.pipeline();
+    taskIds.forEach(id => pipeline.hgetall(`beads:task:${id}`));
+    const tasks = await pipeline.exec();
+
+    const validTasks = tasks.filter(t => t !== null);
 
     return NextResponse.json({
-      tasks: tasks.filter(t => t !== null),
+      tasks: validTasks,
       source: 'kv',
-      count: tasks.length,
+      count: validTasks.length,
     });
   } catch (error) {
     console.error('KV Tasks API error:', error);
