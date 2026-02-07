@@ -17,7 +17,10 @@ const statusConfig = {
 };
 
 export function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.todo;
+  // Defensive check: fall back to 'todo' if status is invalid or undefined
+  // This prevents crashes when API returns malformed task data
+  const validStatus = (status && status in statusConfig) ? status as keyof typeof statusConfig : 'todo';
+  const config = statusConfig[validStatus];
   const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1';
 
   return (
