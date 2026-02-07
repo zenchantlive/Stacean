@@ -1,5 +1,6 @@
 "use client";
 
+import "../focused.css";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Layers, Bot, Zap, Activity, ArrowLeft, CheckSquare } from "lucide-react";

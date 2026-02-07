@@ -390,7 +390,7 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -481,7 +481,7 @@ export default function Home() {
   return (
     <div className="app">
       {/* Desktop Sidebar */}
-      <aside className="sidebar-desktop">
+      <aside className={`sidebar-desktop ${sidebarCollapsed ? "collapsed" : ""}`}>
         <div className="sidebar-header">
           <div className="logo">
             <Activity size={20} />

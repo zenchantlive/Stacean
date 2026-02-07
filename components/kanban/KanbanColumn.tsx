@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Droppable } from '@hello-pangea/dnd';
+import { Droppable as _Droppable } from '@hello-pangea/dnd';
+const Droppable = _Droppable as any; // eslint-disable-line
 import { TaskCard } from './TaskCard';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +59,7 @@ export function KanbanColumn({ id, title, tasks, color, onTaskClick, onTaskDelet
         type="TASK"
         direction="vertical"
       >
-        {(provided, snapshot) => {
+        {(provided: any, snapshot: any) => {
           const isOver = snapshot.isDraggingOver;
 
           return (

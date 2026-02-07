@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /**
  * Stacean v2.0 - Premium Dark Theme
  * Ocean Depth theme with #F97316 (orange) accents
@@ -330,7 +334,7 @@ body {
 /* Pipeline Stats */
 .pipeline-stats {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--spacing-sm);
   margin: var(--spacing-md) 0 var(--spacing-lg);
 }
@@ -896,7 +900,7 @@ body {
   .main {
     margin-left: 0;
     width: 100%;
-    padding: var(--spacing-lg) var(--spacing-md) 56px var(--spacing-md);
+    padding: 68px var(--spacing-md) 80px var(--spacing-md);
   }
 
   /* Pipeline stats - Stack vertically, 2 columns */
@@ -941,7 +945,7 @@ body {
   height: 56px;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--spacing-md) var(--spacing-sm) 56px var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
   background: rgba(24, 24, 27, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -982,14 +986,8 @@ body {
   width: 280px;
   background: var(--bg-secondary);
   padding: var(--spacing-md);
-  transform: translateX(-100%);
-  transition: transform 0.25s ease-out;
   z-index: 70;
   overflow-y: auto;
-}
-
-.mobile-sidebar.open {
-  transform: translateX(0);
 }
 
 .mobile-top {
@@ -1009,7 +1007,7 @@ body {
   right: 0;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-primary);
-  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) env(safe-area-inset-bottom, var(--spacing-md));
+  padding: var(--spacing-sm) var(--spacing-sm) env(safe-area-inset-bottom, var(--spacing-sm)) var(--spacing-sm);
   justify-content: space-around;
   gap: 0;
   z-index: 60;
