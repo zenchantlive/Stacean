@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Draggable } from '@hello-pangea/dnd';
+import { Draggable as _Draggable } from '@hello-pangea/dnd';
+const Draggable = _Draggable as any; // eslint-disable-line
 import { cn } from '@/lib/utils';
 import { Clock, User, MoreVertical } from 'lucide-react';
 import { PriorityBadge } from '../common/PriorityBadge';
@@ -19,7 +20,7 @@ export function TaskCard({ task, index, onClick, onDelete }: TaskCardProps) {
 
   return (
     <Draggable draggableId={task.id} index={index}>
-      {(provided, snapshot) => (
+      {(provided: any, snapshot: any) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}

@@ -40,6 +40,45 @@ const PRIORITY_COLORS: Record<NonNullable<Task['priority']>, string> = {
   low: 'var(--priority-low, #71717A)',
 };
 
+// Wrapper to avoid React 18 types incompatibility with @hello-pangea/dnd
+const TypedDragDropContext = DragDropContext as any; // eslint-disable-line
+
+function DesktopBoard({
+  columns,
+  getColumnTasks,
+  onDragStart,
+  onDragEnd,
+  onTaskClick,
+  onTaskDelete,
+}: {
+  columns: Column[];
+  getColumnTasks: (status: TaskStatus) => Task[];
+  onDragStart: (start: { draggableId: string }) => void;
+  onDragEnd: (result: DropResult) => void;
+  onTaskClick: (taskId: string) => void;
+  onTaskDelete?: (taskId: string) => void;
+}): React.ReactElement {
+  return (
+    <TypedDragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <div className="flex-1 overflow-x-auto pb-6 min-w-0">
+        <div className="flex gap-4 min-h-0 px-6 py-4">
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              color={column.color}
+              tasks={getColumnTasks(column.id)}
+              onTaskClick={onTaskClick}
+              onTaskDelete={onTaskDelete}
+            />
+          ))}
+        </div>
+      </div>
+    </TypedDragDropContext>
+  );
+}
+
 export function KanbanBoard({
   initialTasks,
   onTaskClick,
@@ -340,23 +379,14 @@ export function KanbanBoard({
         </div>
       ) : (
         // Desktop: Drag-drop Kanban
-        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="flex-1 overflow-x-auto pb-6 min-w-0">
-            <div className="flex gap-4 min-h-0 px-6 py-4">
-              {COLUMNS.map((column): React.ReactNode => (
-                <KanbanColumn
-                  key={column.id}
-                  id={column.id}
-                  title={column.title}
-                  color={column.color}
-                  tasks={getColumnTasks(column.id)}
-                  onTaskClick={handleTaskTap}
-                  onTaskDelete={onTaskDelete}
-                />
-              ))}
-            </div>
-          </div>
-        </DragDropContext>
+        <DesktopBoard
+          columns={COLUMNS}
+          getColumnTasks={getColumnTasks}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onTaskClick={handleTaskTap}
+          onTaskDelete={onTaskDelete}
+        />
       )}
 
       {/* Task Modal */}
