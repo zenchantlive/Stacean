@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
+import { ProjectFilterDropdown } from '@/components/kanban/ProjectFilterDropdown';
 import { SSEStatusIndicator } from '@/components/common/SSEStatusIndicator';
 import { Task } from '@/types/task';
 
@@ -10,6 +11,7 @@ export function ObjectivesView() {
   const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<'stacean' | 'beads' | 'both'>('both');
+  const [selectedProject, setSelectedProject] = useState<string>('all');
 
   // Fetch tasks from Stacean KV
   const fetchStaceanTasks = useCallback(async () => {
@@ -168,14 +170,34 @@ export function ObjectivesView() {
   }
 
   return (
-    <KanbanBoard
-      initialTasks={tasks}
-      onTaskClick={handleTaskClick}
-      onTaskDelete={handleTaskDelete}
-      onTaskUpdate={handleTaskUpdate}
-      onCreateTask={handleCreateTask}
-      onSettingsClick={handleSettingsClick}
-    />
+    <div className="flex flex-col h-full">
+      {/* Project Filter */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--bg-tertiary)]">
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Objectives</h2>
+          <ProjectFilterDropdown
+            tasks={tasks}
+            selectedProject={selectedProject}
+            onProjectChange={setSelectedProject}
+          />
+        </div>
+        <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">
+          {dataSource === 'both' ? 'Stacean + Beads' : dataSource === 'beads' ? 'Beads Only' : 'Stacean'}
+        </span>
+      </div>
+
+      <div className="flex-1 min-h-0">
+        <KanbanBoard
+          initialTasks={tasks}
+          selectedProject={selectedProject}
+          onTaskClick={handleTaskClick}
+          onTaskDelete={handleTaskDelete}
+          onTaskUpdate={handleTaskUpdate}
+          onCreateTask={handleCreateTask}
+          onSettingsClick={handleSettingsClick}
+        />
+      </div>
+    </div>
   );
 }
 
