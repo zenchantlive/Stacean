@@ -9,6 +9,7 @@ interface StatusBadgeProps {
 const statusConfig = {
   todo: { label: 'TODO', color: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' },
   assigned: { label: 'ASSIGNED', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  active: { label: 'ACTIVE', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
   in_progress: { label: 'IN PROGRESS', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
   'needs-you': { label: 'NEEDS YOU', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
   ready: { label: 'READY', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
