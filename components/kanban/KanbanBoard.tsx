@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Plus, Settings } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
@@ -10,6 +10,7 @@ import type { Task, TaskStatus } from '@/types/task';
 
 interface KanbanBoardProps {
   initialTasks: Task[];
+  selectedProject?: string;
   onTaskClick?: (taskId: string) => void;
   onTaskDelete?: (taskId: string) => void;
   onTaskUpdate?: (taskId: string, updates: Partial<Task>) => void;
@@ -81,6 +82,7 @@ function DesktopBoard({
 
 export function KanbanBoard({
   initialTasks,
+  selectedProject,
   onTaskClick,
   onTaskDelete,
   onTaskUpdate,
@@ -92,6 +94,12 @@ export function KanbanBoard({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [mobileActiveStatus, setMobileActiveStatus] = useState<TaskStatus>(COLUMNS[0].id);
+
+  // Filter tasks by project
+  const filteredTasks = useMemo(() => {
+    if (!selectedProject || selectedProject === 'all') return tasks;
+    return tasks.filter((task) => task.project === selectedProject);
+  }, [tasks, selectedProject]);
 
   // Detect mobile device
   useEffect(() => {
@@ -178,11 +186,11 @@ export function KanbanBoard({
   );
 
   const getColumnTasks = useCallback(
-    (status: TaskStatus): Task[] => tasks.filter((t): boolean => t.status === status),
-    [tasks]
+    (status: TaskStatus): Task[] => filteredTasks.filter((t): boolean => t.status === status),
+    [filteredTasks]
   );
 
-  const totalTasks = tasks.length;
+  const totalTasks = filteredTasks.length;
   const completedTasks = getColumnTasks('shipped').length;
   const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
