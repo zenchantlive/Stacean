@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Plus, Settings } from 'lucide-react';
 import { KanbanColumn } from './KanbanColumn';
@@ -91,7 +91,7 @@ export function KanbanBoard({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
-  const columnRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [mobileActiveStatus, setMobileActiveStatus] = useState<TaskStatus>(COLUMNS[0].id);
 
   // Detect mobile device
   useEffect(() => {
@@ -186,111 +186,7 @@ export function KanbanBoard({
   const completedTasks = getColumnTasks('shipped').length;
   const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  // Scroll to column
-  const scrollToColumn = useCallback((columnId: string): void => {
-    const el = columnRefs.current.get(columnId);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
-  // Mobile column render - memoized
-  const mobileColumns = useMemo((): React.ReactNode => {
-    return (
-      <div className="flex flex-col gap-4">
-        {COLUMNS.map((column): React.ReactNode => (
-          <div 
-            key={column.id}
-            className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden"
-            ref={(el: HTMLDivElement | null): void => {
-              if (el) columnRefs.current.set(column.id, el);
-              else columnRefs.current.delete(column.id);
-            }}
-          >
-            {/* Column Header - touch friendly */}
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-4 bg-[var(--bg-tertiary)] touch-manipulation"
-              onClick={(): void => scrollToColumn(column.id)}
-              aria-label={`Go to ${column.title} column`}
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: column.color }}
-                />
-                <span className="font-semibold text-sm uppercase tracking-wider text-[var(--text-primary)]">
-                  {column.title}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="bg-[var(--bg-primary)] px-2 py-0.5 rounded-full text-xs font-bold">
-                  {getColumnTasks(column.id).length}
-                </span>
-                <span className="text-[var(--text-muted)]" aria-hidden="true">→</span>
-              </div>
-            </button>
-            
-            {/* Tasks - full width cards */}
-            <div className="p-3 space-y-3">
-              {getColumnTasks(column.id).map((task): React.ReactNode => (
-                <div
-                  key={task.id}
-                  onClick={(): void => handleTaskTap(task.id)}
-                  onKeyDown={(e: React.KeyboardEvent): void => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleTaskTap(task.id);
-                    }
-                  }}
-                  className="bg-[var(--bg-primary)] p-4 rounded-xl border border-[var(--bg-tertiary)] cursor-pointer active:bg-[var(--bg-hover)] transition-all touch-manipulation"
-                  style={{ 
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'manipulation'
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Task: ${task.title}`}
-                >
-                  <div className="flex justify-between items-start gap-3">
-                    <h4 className="font-semibold text-sm text-[var(--text-primary)]">
-                      {task.title}
-                    </h4>
-                    <div
-                      className="w-1 h-8 rounded-full flex-shrink-0"
-                      style={{
-                        backgroundColor: PRIORITY_COLORS[task.priority ?? 'low']
-                      }}
-                    />
-                  </div>
-                  {task.description && (
-                    <p className="text-xs text-[var(--text-muted)] mt-2 line-clamp-2">
-                      {task.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--bg-tertiary)]">
-                    <div className="flex items-center gap-2">
-                      {task.agentCodeName && (
-                        <span className="text-xs bg-[var(--bg-tertiary)] px-2 py-1 rounded text-[var(--text-secondary)]">
-                          {task.agentCodeName}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-[var(--text-muted)]">
-                      Tap to change status →
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {getColumnTasks(column.id).length === 0 && (
-                <div className="text-center py-6 text-[var(--text-muted)] text-sm">
-                  No tasks
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }, [getColumnTasks, handleTaskTap, scrollToColumn]);
+  // No longer needed: scroll-to-column and stacked column rendering removed in favor of tabbed mobile view
 
   return (
     <div className="flex h-full flex-col min-h-0">
@@ -351,33 +247,128 @@ export function KanbanBoard({
         </div>
       </div>
 
-      {/* Mobile Quick Nav */}
+      {/* Mobile: Status Tab Bar + Filtered View */}
       {isMobile && (
-        <div className="md:hidden px-3 py-2 bg-[var(--bg-secondary)] border-b border-[var(--bg-tertiary)]">
-          <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Kanban columns">
-            {COLUMNS.map((col): React.ReactNode => (
-              <button
-                key={col.id}
-                type="button"
-                onClick={(): void => scrollToColumn(col.id)}
-                className="flex-shrink-0 px-3 py-1.5 bg-[var(--bg-tertiary)] rounded-full text-xs font-medium text-[var(--text-secondary)] whitespace-nowrap touch-manipulation"
-                role="tab"
-                aria-label={`${col.title} column with ${getColumnTasks(col.id).length} tasks`}
-              >
-                {col.title} ({getColumnTasks(col.id).length})
-              </button>
-            ))}
+        <>
+          {/* Status Tab Bar - sticky, no scroll needed */}
+          <div className="md:hidden bg-[var(--bg-secondary)] border-b border-[var(--bg-tertiary)]">
+            <div className="flex overflow-x-auto" role="tablist" aria-label="Status filter">
+              {COLUMNS.map((col): React.ReactNode => {
+                const count = getColumnTasks(col.id).length;
+                const isActive = mobileActiveStatus === col.id;
+                return (
+                  <button
+                    key={col.id}
+                    type="button"
+                    onClick={(): void => setMobileActiveStatus(col.id)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide whitespace-nowrap border-b-2 transition-colors touch-manipulation ${
+                      isActive
+                        ? 'border-current text-white'
+                        : 'border-transparent text-[var(--text-muted)] active:text-[var(--text-secondary)]'
+                    }`}
+                    style={isActive ? { color: col.color } : undefined}
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-label={`${col.title}: ${count} tasks`}
+                  >
+                    <div
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: col.color, opacity: isActive ? 1 : 0.5 }}
+                    />
+                    {col.title}
+                    {count > 0 && (
+                      <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        isActive ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+
+          {/* Filtered Task List for Active Status */}
+          <div className="flex-1 overflow-y-auto p-3" role="tabpanel">
+            {(() => {
+              const activeTasks = getColumnTasks(mobileActiveStatus);
+              const activeColumn = COLUMNS.find(c => c.id === mobileActiveStatus);
+              if (activeTasks.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center mb-3 opacity-30"
+                      style={{ backgroundColor: activeColumn?.color }}
+                    >
+                      <span className="text-white text-lg font-bold">0</span>
+                    </div>
+                    <p className="text-[var(--text-muted)] text-sm">
+                      No {activeColumn?.title.toLowerCase()} tasks
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-3">
+                  {activeTasks.map((task): React.ReactNode => (
+                    <div
+                      key={task.id}
+                      onClick={(): void => handleTaskTap(task.id)}
+                      onKeyDown={(e: React.KeyboardEvent): void => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleTaskTap(task.id);
+                        }
+                      }}
+                      className="bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--bg-tertiary)] cursor-pointer active:bg-[var(--bg-hover)] transition-all touch-manipulation"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation',
+                        borderLeftWidth: '3px',
+                        borderLeftColor: PRIORITY_COLORS[task.priority ?? 'low'],
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Task: ${task.title}`}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <h4 className="font-semibold text-sm text-[var(--text-primary)] flex-1">
+                          {task.title}
+                        </h4>
+                        <span
+                          className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+                          style={{
+                            backgroundColor: `${PRIORITY_COLORS[task.priority ?? 'low']}20`,
+                            color: PRIORITY_COLORS[task.priority ?? 'low'],
+                          }}
+                        >
+                          {task.priority ?? 'low'}
+                        </span>
+                      </div>
+                      {task.description && (
+                        <p className="text-xs text-[var(--text-muted)] mt-2 line-clamp-2">
+                          {task.description}
+                        </p>
+                      )}
+                      {task.agentCodeName && (
+                        <div className="mt-2">
+                          <span className="text-[10px] bg-[var(--bg-tertiary)] px-2 py-1 rounded text-[var(--text-secondary)]">
+                            {task.agentCodeName}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </>
       )}
 
-      {/* Board Content */}
-      {isMobile ? (
-        // Mobile: Stacked column view (no drag-drop)
-        <div className="flex-1 overflow-y-auto p-3">
-          {mobileColumns}
-        </div>
-      ) : (
+      {/* Desktop Board */}
+      {!isMobile && (
         // Desktop: Drag-drop Kanban
         <DesktopBoard
           columns={COLUMNS}
