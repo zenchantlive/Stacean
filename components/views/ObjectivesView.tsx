@@ -9,19 +9,69 @@ export function ObjectivesView() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<'stacean' | 'beads' | 'both'>('both');
 
-  // Fetch tasks
-  const fetchTasks = useCallback(async () => {
+  // Fetch tasks from Stacean KV
+  const fetchStaceanTasks = useCallback(async () => {
     try {
       const res = await fetch('/api/tracker/tasks');
       const data = await res.json();
-      setTasks(Array.isArray(data) ? data : []);
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      console.error('Failed to fetch Stacean tasks:', err);
+      return [];
+    }
+  }, []);
+
+  // Fetch tasks from Beads
+  const fetchBeadsTasks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tracker/beads');
+      const data = await res.json();
+      if (data.tasks && Array.isArray(data.tasks)) {
+        return data.tasks;
+      }
+      return [];
+    } catch (err) {
+      console.error('Failed to fetch Beads tasks:', err);
+      return [];
+    }
+  }, []);
+
+  // Fetch all tasks
+  const fetchTasks = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [staceanTasks, beadsTasks] = await Promise.all([
+        fetchStaceanTasks(),
+        fetchBeadsTasks(),
+      ]);
+
+      // Combine and deduplicate by ID
+      const allTasks = [...staceanTasks, ...beadsTasks];
+      const uniqueTasks = allTasks.reduce((acc: Task[], task: Task) => {
+        if (!acc.find((t: Task) => t.id === task.id)) {
+          acc.push(task);
+        }
+        return acc;
+      }, [] as Task[]);
+
+      setTasks(uniqueTasks);
+
+      // Update data source indicator
+      if (staceanTasks.length > 0 && beadsTasks.length > 0) {
+        setDataSource('both');
+      } else if (beadsTasks.length > 0) {
+        setDataSource('beads');
+      } else {
+        setDataSource('stacean');
+      }
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchStaceanTasks, fetchBeadsTasks]);
 
   // Initial fetch
   useEffect(() => {
