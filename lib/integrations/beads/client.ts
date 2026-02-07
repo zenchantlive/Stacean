@@ -4,6 +4,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import type { BeadsIssue } from './mapper';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -13,6 +14,7 @@ const execAsync = promisify(exec);
 
 const BEADS_EXEC = 'bd';
 const TIMEOUT_MS = 30000; // 30 second timeout
+const STACEAN_REPO_PATH = path.resolve(__dirname, '../../../../');
 
 // ============================================================================
 // Error Handling
@@ -39,7 +41,7 @@ async function execBeads(args: string[]): Promise<any> {
       {
         timeout: TIMEOUT_MS,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-        cwd: process.env.BEADS_CWD || process.cwd(),
+        cwd: STACEAN_REPO_PATH, // Run from stacean-repo
       }
     );
 
