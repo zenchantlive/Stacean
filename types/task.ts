@@ -1,12 +1,11 @@
+// 6-status workflow: TODO → IN_PROGRESS → NEEDS_YOU → REVIEW → READY → SHIPPED
 export type TaskStatus =
   | 'todo'
-  | 'assigned'
   | 'in_progress'
   | 'needs-you'
-  | 'ready'
   | 'review'
-  | 'shipped'
-  | 'deleted';
+  | 'ready'
+  | 'shipped';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
