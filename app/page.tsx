@@ -431,7 +431,7 @@ export default function Home() {
       fetchAgents();
       fetchState();
       fetchTasks();
-    }, 5000);
+    }, 10000); // Poll every 10 seconds
     return () => clearInterval(interval);
   }, []);
 

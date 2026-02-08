@@ -60,6 +60,14 @@ skills/command-center/
 bd config set status.custom "needs_jordan,in_review,ready_to_commit"
 ```
 
+### Phase 6: Real-time Updates
+**Status:** ✅ **Implemented (10s Polling)**
+
+**Changes:**
+- Added background polling to `ObjectivesView.tsx`.
+- Refined `fetchTasks` to prevent UI flickering during refreshes.
+- Aligned app-wide polling interval to 10s in `Home` component.
+
 ---
 
 ## Architecture (Current)
@@ -96,7 +104,7 @@ Frontend Dashboard
 
 ### Future Enhancements
 - [ ] Auto-sync after beads changes (git hooks)
-- [ ] Real-time updates via SSE
+- [ ] SSE for true real-time (if polling load becomes an issue)
 - [ ] Activity logging in task metadata
 - [ ] Mobile optimization
 
