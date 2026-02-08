@@ -98,8 +98,8 @@ export function KanbanBoard({
     if (!selectedProject || selectedProject === 'all') return tasks;
     return tasks.filter((task): boolean => task.project === selectedProject);
   }, [tasks, selectedProject]);
-  const [mobileActiveStatus, setMobileActiveStatus] = useState<TaskStatus>(COLUMNS[0].id);
 
+  const [mobileActiveStatus, setMobileActiveStatus] = useState<TaskStatus>(COLUMNS[0].id);
 
   // Detect mobile device
   useEffect(() => {
