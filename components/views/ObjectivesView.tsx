@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import { ProjectFilterDropdown } from '@/components/kanban/ProjectFilterDropdown';
 import { SSEStatusIndicator } from '@/components/common/SSEStatusIndicator';
-import { Task } from '@/types/task';
+import { Task, Project } from '@/types/task';
 
 export function ObjectivesView() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -12,6 +12,7 @@ export function ObjectivesView() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<'stacean' | 'beads' | 'both'>('both');
   const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [projects, setProjects] = useState<Project[]>([]);
 
   // Fetch tasks from KV (multi-repo source)
   const fetchKVTasks = useCallback(async () => {
@@ -22,6 +23,17 @@ export function ObjectivesView() {
     } catch (err) {
       console.error('Failed to fetch KV tasks:', err);
       return [];
+    }
+  }, []);
+
+  // Fetch projects from KV registration
+  const fetchProjects = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tracker/projects');
+      const data = await res.json();
+      setProjects(data || []);
+    } catch (err) {
+      console.error('Failed to fetch projects:', err);
     }
   }, []);
 
@@ -51,11 +63,13 @@ export function ObjectivesView() {
   // Initial fetch and polling
   useEffect(() => {
     fetchTasks();
+    fetchProjects();
     const interval = setInterval(() => {
       fetchTasks();
+      fetchProjects();
     }, 10000); // Poll every 10 seconds
     return () => clearInterval(interval);
-  }, [fetchTasks]);
+  }, [fetchTasks, fetchProjects]);
 
   // Handle task move
   const handleTaskUpdate = useCallback(async (taskId: string, updates: Partial<Task>) => {
@@ -154,6 +168,7 @@ export function ObjectivesView() {
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">Objectives</h2>
           <ProjectFilterDropdown
             tasks={tasks}
+            availableProjects={projects}
             selectedProject={selectedProject}
             onProjectChange={setSelectedProject}
           />

@@ -6,9 +6,9 @@ import {
   deleteIssue as beadsDeleteIssue,
   closeIssue as beadsCloseIssue,
 } from '@/lib/integrations/beads/client';
-import type { Task, TaskStatus, TaskPriority, TaskActivity, CreateTaskInput, UpdateTaskInput } from '@/types/task';
+import type { Task, TaskStatus, TaskPriority, TaskActivity, CreateTaskInput, UpdateTaskInput, Project } from '@/types/task';
 
-export type { Task, TaskStatus, TaskPriority, TaskActivity, CreateTaskInput, UpdateTaskInput };
+export type { Task, TaskStatus, TaskPriority, TaskActivity, CreateTaskInput, UpdateTaskInput, Project };
 
 export interface TaskContext {
   files: string[];
@@ -177,8 +177,45 @@ export class TaskTrackerAdapter extends KVAdapter {
   }
 }
 
-// Export singleton
+/**
+ * Project Tracker Adapter
+ * Manages project metadata (labels, emojis, etc.) in KV
+ */
+export class ProjectTrackerAdapter extends KVAdapter {
+  constructor() {
+    super({ prefix: 'tracker:project' });
+  }
+
+  async getProject(id: string): Promise<Project | null> {
+    return this.get<Project>(id);
+  }
+
+  async setProject(project: Project): Promise<void> {
+    await this.set(project.id, project);
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    return this.delete(id);
+  }
+
+  async listProjects(): Promise<Project[]> {
+    const pattern = `${this.getPrefix()}:*`;
+    try {
+      const keys = await kv.keys(pattern);
+      if (!keys || keys.length === 0) return [];
+
+      const values = await kv.mget<Project>(...keys);
+      return values.filter((p): p is Project => p !== null);
+    } catch (error) {
+      console.error('ProjectTracker listProjects error:', error);
+      return [];
+    }
+  }
+}
+
+// Export singletons
 export const taskTracker = new TaskTrackerAdapter();
+export const projectTracker = new ProjectTrackerAdapter();
 
 // ============================================================================
 // Beads Mirroring Helper (Dual-Write)

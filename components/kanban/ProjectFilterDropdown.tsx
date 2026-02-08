@@ -1,24 +1,20 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Filter } from 'lucide-react';
-import type { Task } from '@/types/task';
+import type { Task, Project } from '@/types/task';
 
 interface ProjectFilterDropdownProps {
   tasks: Task[];
+  availableProjects: Project[];
   selectedProject: string;
   onProjectChange: (project: string) => void;
 }
 
-const PROJECTS = [
-  { value: 'all', label: 'All Projects' },
-  { value: 'clawd', label: '🦞 Clawd' },
-  { value: 'stacean-repo', label: '🎯 Stacean' },
-  { value: 'personal-life', label: '🏠 Personal Life' },
-];
 
 export function ProjectFilterDropdown({
   tasks,
+  availableProjects,
   selectedProject,
   onProjectChange,
 }: ProjectFilterDropdownProps): React.ReactElement {
@@ -36,9 +32,36 @@ export function ProjectFilterDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Build project options from metadata + unique projects in tasks
+  const projectOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [
+      { value: 'all', label: 'All Projects' }
+    ];
+
+    // Add registered projects
+    availableProjects.forEach(p => {
+      options.push({
+        value: p.id,
+        label: p.emoji ? `${p.emoji} ${p.label}` : p.label
+      });
+    });
+
+    // Add projects found in tasks but not registered
+    const registeredIds = new Set(availableProjects.map(p => p.id));
+    const taskProjects = new Set(tasks.map(t => t.project).filter(Boolean) as string[]);
+
+    taskProjects.forEach(pid => {
+      if (!registeredIds.has(pid)) {
+        options.push({ value: pid, label: pid });
+      }
+    });
+
+    return options;
+  }, [availableProjects, tasks]);
+
   // Count tasks per project
-  const projectCounts = PROJECTS.reduce(
-    (acc, project) => {
+  const projectCounts = projectOptions.reduce(
+    (acc: Record<string, number>, project) => {
       if (project.value === 'all') {
         acc[project.value] = tasks.length;
       } else {
@@ -49,7 +72,7 @@ export function ProjectFilterDropdown({
     {} as Record<string, number>
   );
 
-  const currentProject = PROJECTS.find((p) => p.value === selectedProject);
+  const currentProject = projectOptions.find((p) => p.value === selectedProject);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -88,7 +111,7 @@ export function ProjectFilterDropdown({
               Filter by Project
             </p>
           </div>
-          {PROJECTS.map((project) => (
+          {projectOptions.map((project) => (
             <button
               key={project.value}
               type="button"
@@ -97,8 +120,8 @@ export function ProjectFilterDropdown({
                 setIsOpen(false);
               }}
               className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-all hover:bg-[var(--bg-tertiary)] ${selectedProject === project.value
-                  ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
-                  : 'text-[var(--text-secondary)]'
+                ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
+                : 'text-[var(--text-secondary)]'
                 }`}
               role="menuitem"
             >
@@ -107,8 +130,8 @@ export function ProjectFilterDropdown({
                 {project.value !== 'all' && projectCounts[project.value] > 0 && (
                   <span
                     className={`px-1.5 py-0.5 text-xs rounded-full ${selectedProject === project.value
-                        ? 'bg-[var(--accent)]/20'
-                        : 'bg-[var(--bg-tertiary)]'
+                      ? 'bg-[var(--accent)]/20'
+                      : 'bg-[var(--bg-tertiary)]'
                       }`}
                   >
                     {projectCounts[project.value]}

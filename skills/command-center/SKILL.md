@@ -113,6 +113,21 @@ This runs `scripts/sync-beads-to-kv.ts` which:
 
 **No git commit needed** - sync writes directly to cloud KV.
 
+## Dynamic Projects
+
+Projects are discovered automatically from tasks in KV. To register a project with a custom label or emoji so it looks polished on the dashboard, use the management script:
+
+```bash
+# Register a new project
+bun run scripts/manage-projects.ts --id=my-app --label="My App" --emoji="🚀"
+
+# List all registered projects
+bun run scripts/manage-projects.ts --list
+
+# Delete a registered project
+bun run scripts/manage-projects.ts --delete=my-app
+```
+
 ## References
 
 - [status-mapping.md](references/status-mapping.md) - Complete status mapping table

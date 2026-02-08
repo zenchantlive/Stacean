@@ -9,6 +9,13 @@ export type TaskStatus =
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export interface Project {
+  id: string;
+  label: string;
+  emoji?: string;
+  color?: string;
+}
+
 export interface TaskActivity {
   id: string;
   timestamp: string;
