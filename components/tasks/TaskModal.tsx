@@ -489,4 +489,6 @@ export function TaskModal({ task: initialTask, onClose, onUpdate, onStatusChange
   );
 }
 
+TaskModal.displayName = 'TaskModal';
+
 export default TaskModal;
