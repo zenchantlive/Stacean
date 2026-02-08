@@ -22,11 +22,10 @@ const TABS: { id: TabType; label: string; icon: typeof Clock }[] = [
 
 const STATUS_OPTIONS: { value: string; label: string; color: string }[] = [
   { value: 'todo', label: 'TODO', color: '#71717A' },
-  { value: 'assigned', label: 'ASSIGNED', color: '#3B82F6' },
   { value: 'in_progress', label: 'IN PROGRESS', color: '#F97316' },
   { value: 'needs-you', label: 'NEEDS YOU', color: '#F59E0B' },
-  { value: 'ready', label: 'READY', color: '#22C55E' },
   { value: 'review', label: 'REVIEW', color: '#8B5CF6' },
+  { value: 'ready', label: 'READY', color: '#22C55E' },
   { value: 'shipped', label: 'SHIPPED', color: '#10B981' },
 ];
 

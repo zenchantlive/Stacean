@@ -26,11 +26,10 @@ interface Column {
 
 const COLUMNS: Column[] = [
   { id: 'todo', title: 'TODO', color: '#A1A1AA' },
-  { id: 'assigned', title: 'ASSIGNED', color: '#3B82F6' },
   { id: 'in_progress', title: 'IN PROGRESS', color: '#F97316' },
   { id: 'needs-you', title: 'NEEDS YOU', color: '#F59E0B' },
-  { id: 'ready', title: 'READY', color: '#22C55E' },
   { id: 'review', title: 'REVIEW', color: '#8B5CF6' },
+  { id: 'ready', title: 'READY', color: '#22C55E' },
   { id: 'shipped', title: 'SHIPPED', color: '#10B981' },
 ];
 
