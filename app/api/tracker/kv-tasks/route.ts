@@ -22,42 +22,57 @@ interface RawBead {
   title: string;
   description?: string;
   status: string;
-  priority: number;
+  priority: number | string;
   labels?: string[];
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  createdAt?: string;  // Allow both formats
+  updatedAt?: string;
+  project?: string;
+  agentCodeName?: string;
 }
 
 /**
  * Transform KV bead to Stacean task format
  */
 function transformBeadToTask(bead: RawBead): BeadTask {
-  // Map Beads status to Stacean status
-  const statusMap: Record<string, BeadTask['status']> = {
+  // Map Beads status to Stacean status (Unified 6-status system)
+  const statusMap: Record<string, string> = {
     'open': 'todo',
+    'todo': 'todo',
     'in_progress': 'in_progress',
     'agent_working': 'in_progress',
     'needs_jordan': 'needs-you',
+    'needs-you': 'needs-you',
     'ready_to_commit': 'ready',
+    'ready': 'ready',
     'in_review': 'review',
+    'review': 'review',
+    'shipped': 'shipped',
     'pushed': 'shipped',
+    'done': 'shipped',
+    'closed': 'shipped',
   };
 
-  // Map Beads priority (0-3) to Stacean priority
-  const priorityMap: Record<number, BeadTask['priority']> = {
+  // Map Beads priority (0-3 or string) to Stacean priority
+  const priorityMap: Record<string | number, BeadTask['priority']> = {
     0: 'urgent',
     1: 'high',
     2: 'medium',
     3: 'low',
+    'urgent': 'urgent',
+    'high': 'high',
+    'medium': 'medium',
+    'low': 'low',
   };
 
-  // Extract agent code name from labels (format: "agent:Bro")
+  // Extract agent code name
   const agentLabel = bead.labels?.find((l: string) => l.startsWith('agent:'));
-  const agentCodeName = agentLabel ? agentLabel.replace('agent:', '') : 'unknown';
+  const agentCodeName = bead.agentCodeName || (agentLabel ? agentLabel.replace('agent:', '') : 'unknown');
 
-  // Extract project from labels (format: "project:stacean-repo")
+  // Extract project
   const projectLabel = bead.labels?.find((l: string) => l.startsWith('project:'));
-  const project = projectLabel ? projectLabel.replace('project:', '') : 'general';
+  const project = bead.project || (projectLabel ? projectLabel.replace('project:', '') : getProjectFromId(bead.id));
 
   return {
     id: bead.id,
@@ -67,8 +82,8 @@ function transformBeadToTask(bead: RawBead): BeadTask {
     priority: priorityMap[bead.priority] || 'medium',
     agentCodeName,
     project,
-    createdAt: bead.created_at,
-    updatedAt: bead.updated_at,
+    createdAt: bead.created_at || bead.createdAt || new Date().toISOString(),
+    updatedAt: bead.updated_at || bead.updatedAt || new Date().toISOString(),
     isFromKV: true,
   };
 }
@@ -85,42 +100,48 @@ function getProjectFromId(id: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get project filter from query params
     const { searchParams } = new URL(request.url);
     const project = searchParams.get('project');
 
-    let beads: RawBead[] = [];
+    // Get IDs from sets (new architecture)
+    const taskIds: string[] =
+      project && project !== 'all'
+        ? await kv.smembers(`beads:project:${project}`)
+        : await kv.smembers('beads:all');
 
-    if (project && project !== 'all') {
-      // Fetch from project-specific key
-      const projectKey = `beads:${project}`;
-      beads = await kv.get(projectKey) || [];
-    } else {
-      // Fetch all beads
-      beads = await kv.get('beads:all') || [];
+    if (!taskIds || taskIds.length === 0) {
+      // Fallback for old architecture (direct list)
+      const oldBeads = await kv.get<RawBead[]>('beads:all');
+      if (oldBeads && Array.isArray(oldBeads)) {
+        return NextResponse.json({
+          tasks: oldBeads.map(transformBeadToTask),
+          source: 'kv-compat',
+          count: oldBeads.length
+        });
+      }
+      return NextResponse.json({ tasks: [], source: 'kv', count: 0 });
     }
 
-    // Transform to Stacean task format
-    const tasks: BeadTask[] = beads.map((bead: RawBead) => {
-      // Auto-add project from ID if not in labels
-      if (!bead.labels?.some(l => l.startsWith('project:'))) {
-        const detectedProject = getProjectFromId(bead.id);
-        bead.labels = bead.labels || [];
-        bead.labels.push(`project:${detectedProject}`);
-      }
-      return transformBeadToTask(bead);
-    });
+    // Fetch all task data using pipeline (prefer performance)
+    const pipeline = kv.pipeline();
+    taskIds.forEach(id => pipeline.hgetall(`beads:task:${id}`));
+    const results = await pipeline.exec();
+
+    // Filter, transform and normalize
+    const tasks = (results || [])
+      .filter((t): t is RawBead => t !== null)
+      .map(transformBeadToTask);
 
     return NextResponse.json({
       tasks,
-      source: 'kv',
+      source: 'kv-pipeline',
       count: tasks.length,
       project: project || 'all',
     });
   } catch (error) {
-    console.error('API Error (GET /kv-tasks):', error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch from KV',
+    console.error('KV Tasks API error:', error);
+    return NextResponse.json({
+      error: 'Failed to fetch tasks',
       tasks: [],
       source: 'error'
     }, { status: 500 });

@@ -13,29 +13,14 @@ export function ObjectivesView() {
   const [dataSource, setDataSource] = useState<'stacean' | 'beads' | 'both'>('both');
   const [selectedProject, setSelectedProject] = useState<string>('all');
 
-  // Fetch tasks from Stacean KV
-  const fetchStaceanTasks = useCallback(async () => {
+  // Fetch tasks from KV (multi-repo source)
+  const fetchKVTasks = useCallback(async () => {
     try {
-      const res = await fetch('/api/tracker/tasks');
+      const res = await fetch('/api/tracker/kv-tasks');
       const data = await res.json();
-      return Array.isArray(data) ? data : [];
+      return data.tasks || [];
     } catch (err) {
-      console.error('Failed to fetch Stacean tasks:', err);
-      return [];
-    }
-  }, []);
-
-  // Fetch tasks from Beads
-  const fetchBeadsTasks = useCallback(async () => {
-    try {
-      const res = await fetch('/api/tracker/beads');
-      const data = await res.json();
-      if (data.tasks && Array.isArray(data.tasks)) {
-        return data.tasks;
-      }
-      return [];
-    } catch (err) {
-      console.error('Failed to fetch Beads tasks:', err);
+      console.error('Failed to fetch KV tasks:', err);
       return [];
     }
   }, []);
@@ -44,36 +29,24 @@ export function ObjectivesView() {
   const fetchTasks = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
-      const [staceanTasks, beadsTasks] = await Promise.all([
-        fetchStaceanTasks(),
-        fetchBeadsTasks(),
-      ]);
+      // Fetch tasks from KV (single source of truth)
+      const kvTasks = await fetchKVTasks();
 
-      // Combine and deduplicate by ID
-      const allTasks = [...staceanTasks, ...beadsTasks];
-      const uniqueTasks = allTasks.reduce((acc: Task[], task: Task) => {
-        if (!acc.find((t: Task) => t.id === task.id)) {
-          acc.push(task);
-        }
-        return acc;
-      }, [] as Task[]);
-
-      setTasks(uniqueTasks);
+      // Tasks already come from KV with project filtering
+      setTasks(kvTasks);
 
       // Update data source indicator
-      if (staceanTasks.length > 0 && beadsTasks.length > 0) {
-        setDataSource('both');
-      } else if (beadsTasks.length > 0) {
-        setDataSource('beads');
-      } else {
+      if (kvTasks.length > 0) {
         setDataSource('stacean');
+      } else {
+        setDataSource('beads');
       }
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     } finally {
       setLoading(false);
     }
-  }, [fetchStaceanTasks, fetchBeadsTasks]);
+  }, [fetchKVTasks]);
 
   // Initial fetch and polling
   useEffect(() => {
@@ -175,7 +148,7 @@ export function ObjectivesView() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Project Filter */}
+      {/* Header with Project Filter */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--bg-tertiary)]">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">Objectives</h2>
@@ -186,7 +159,7 @@ export function ObjectivesView() {
           />
         </div>
         <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">
-          {dataSource === 'both' ? 'Stacean + Beads' : dataSource === 'beads' ? 'Beads Only' : 'Stacean'}
+          {tasks.length} tasks | {dataSource === 'both' ? 'Stacean + Beads' : dataSource === 'beads' ? 'Beads Only' : 'Stacean'}
         </span>
       </div>
 
