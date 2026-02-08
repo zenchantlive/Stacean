@@ -34,7 +34,7 @@ export class TaskTrackerAdapter extends KVAdapter {
   async createTask(input: CreateTaskInput): Promise<Task> {
     const id = randomUUID();
     const now = new Date().toISOString();
-    
+
     // Create initial activity
     const activities: TaskActivity[] = [
       {
@@ -44,7 +44,7 @@ export class TaskTrackerAdapter extends KVAdapter {
         details: `Task created: ${input.title}`,
       },
     ];
-    
+
     const task: Task = {
       id,
       title: input.title,
@@ -62,7 +62,7 @@ export class TaskTrackerAdapter extends KVAdapter {
     await this.set(id, task);
 
     // Mirror to Beads (best-effort, fails silently on Vercel)
-    await mirrorToBeads('create', task).catch(() => {});
+    await mirrorToBeads('create', task).catch(() => { });
 
     return task;
   }
@@ -90,7 +90,7 @@ export class TaskTrackerAdapter extends KVAdapter {
     await this.set(id, updated);
 
     // Mirror to Beads (best-effort, fails silently on Vercel)
-    await mirrorToBeads('update', updated).catch(() => {});
+    await mirrorToBeads('update', updated).catch(() => { });
 
     return updated;
   }
@@ -120,17 +120,17 @@ export class TaskTrackerAdapter extends KVAdapter {
    */
   async listTasks(): Promise<Task[]> {
     const pattern = `${this.getPrefix()}:*`;
-    
+
     try {
       const keys = await kv.keys(pattern);
       if (!keys || keys.length === 0) return [];
 
       if (keys.length === 0) return [];
-      
+
       const values = await kv.mget<Task>(...keys);
-      
-      // Filter out nulls and deleted tasks
-      return values.filter(t => t !== null && t.status !== 'deleted') as Task[];
+
+      // Filter out nulls and soft-deleted tasks (marked with deletedAt)
+      return values.filter(t => t !== null && !t.deletedAt) as Task[];
     } catch (error) {
       console.error('TaskTracker listTasks error:', error);
       return [];
@@ -145,16 +145,17 @@ export class TaskTrackerAdapter extends KVAdapter {
     if (!task) return false;
 
     // Soft delete
+    // Mark as shipped with deletedAt timestamp for soft delete tracking
     const deleted: Task = {
       ...task,
-      status: 'deleted',
+      status: 'shipped',
       deletedAt: new Date().toISOString(),
     };
 
     await this.set(id, deleted);
 
     // Mirror to Beads (best-effort, fails silently on Vercel)
-    await mirrorToBeads('delete', task).catch(() => {});
+    await mirrorToBeads('delete', task).catch(() => { });
 
     return true;
   }
@@ -169,7 +170,7 @@ export class TaskTrackerAdapter extends KVAdapter {
     const success = await this.delete(id);
 
     if (success) {
-      await mirrorToBeads('delete', task).catch(() => {});
+      await mirrorToBeads('delete', task).catch(() => { });
     }
 
     return success;
@@ -186,15 +187,14 @@ export const taskTracker = new TaskTrackerAdapter();
 /**
  * Beads status mapping
  */
+// 6-status workflow: TODO → IN_PROGRESS → NEEDS_YOU → REVIEW → READY → SHIPPED
 const BEADS_STATUS_MAP: Record<TaskStatus, string> = {
   'todo': 'open',
-  'assigned': 'agent_working',
-  'in_progress': 'agent_working',
+  'in_progress': 'in_progress',
   'needs-you': 'needs_jordan',
-  'ready': 'ready_to_commit',
   'review': 'in_review',
-  'shipped': 'pushed',
-  'deleted': 'deleted',
+  'ready': 'ready_to_commit',
+  'shipped': 'closed',
 };
 
 const BEADS_PRIORITY_MAP: Record<TaskPriority, number> = {

@@ -35,7 +35,10 @@ const priorityConfig = {
 };
 
 export function PriorityBadge({ priority, size = 'sm' }: PriorityBadgeProps) {
-  const config = priorityConfig[priority];
+  // Defensive check: fall back to 'medium' if priority is invalid or undefined
+  // This prevents crashes when API returns malformed task data
+  const validPriority = priority in priorityConfig ? priority : 'medium';
+  const config = priorityConfig[validPriority];
   const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1';
   const Icon = config.icon;
 

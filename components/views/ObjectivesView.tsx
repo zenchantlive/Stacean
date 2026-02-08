@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import { ProjectFilterDropdown } from '@/components/kanban/ProjectFilterDropdown';
+import { SSEStatusIndicator } from '@/components/common/SSEStatusIndicator';
 import { Task } from '@/types/task';
 
 export function ObjectivesView() {
@@ -25,8 +26,8 @@ export function ObjectivesView() {
   }, []);
 
   // Fetch all tasks
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
+  const fetchTasks = useCallback(async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       // Fetch tasks from KV (single source of truth)
       const kvTasks = await fetchKVTasks();
@@ -47,15 +48,19 @@ export function ObjectivesView() {
     }
   }, [fetchKVTasks]);
 
-  // Initial fetch
+  // Initial fetch and polling
   useEffect(() => {
     fetchTasks();
+    const interval = setInterval(() => {
+      fetchTasks();
+    }, 10000); // Poll every 10 seconds
+    return () => clearInterval(interval);
   }, [fetchTasks]);
 
   // Handle task move
   const handleTaskUpdate = useCallback(async (taskId: string, updates: Partial<Task>) => {
     // Optimistic update
-    setTasks(prev => prev.map(t => 
+    setTasks(prev => prev.map(t =>
       t.id === taskId ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
     ));
 
@@ -66,7 +71,7 @@ export function ObjectivesView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
-      
+
       // Fetch updated tasks to confirm
       await fetchTasks();
     } catch (err) {
@@ -92,13 +97,13 @@ export function ObjectivesView() {
       await fetch(`/api/tracker/tasks/${taskId}`, {
         method: 'DELETE',
       });
-      
+
       // Fetch updated tasks to confirm
-      await fetchTasks();
+      await fetchTasks(false);
     } catch (err) {
       console.error('Failed to delete task:', err);
       // Revert on error
-      await fetchTasks();
+      await fetchTasks(false);
     }
   }, [fetchTasks]);
 
@@ -111,14 +116,14 @@ export function ObjectivesView() {
       await fetch('/api/tracker/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           title: title.trim(),
           priority: 'medium',
         }),
       });
-      
+
       // Fetch updated tasks
-      await fetchTasks();
+      await fetchTasks(false);
     } catch (err) {
       console.error('Failed to create task:', err);
       alert('Failed to create task. Please try again.');
@@ -154,7 +159,7 @@ export function ObjectivesView() {
           />
         </div>
         <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">
-          {tasks.length} tasks
+          {tasks.length} tasks | {dataSource === 'both' ? 'Stacean + Beads' : dataSource === 'beads' ? 'Beads Only' : 'Stacean'}
         </span>
       </div>
 

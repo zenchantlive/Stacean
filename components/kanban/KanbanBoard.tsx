@@ -26,11 +26,10 @@ interface Column {
 
 const COLUMNS: Column[] = [
   { id: 'todo', title: 'TODO', color: '#A1A1AA' },
-  { id: 'assigned', title: 'ASSIGNED', color: '#3B82F6' },
   { id: 'in_progress', title: 'IN PROGRESS', color: '#F97316' },
   { id: 'needs-you', title: 'NEEDS YOU', color: '#F59E0B' },
-  { id: 'ready', title: 'READY', color: '#22C55E' },
   { id: 'review', title: 'REVIEW', color: '#8B5CF6' },
+  { id: 'ready', title: 'READY', color: '#22C55E' },
   { id: 'shipped', title: 'SHIPPED', color: '#10B981' },
 ];
 
@@ -93,6 +92,12 @@ export function KanbanBoard({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  // Filter tasks by project
+  const filteredTasks = useMemo((): Task[] => {
+    if (!selectedProject || selectedProject === 'all') return tasks;
+    return tasks.filter((task): boolean => task.project === selectedProject);
+  }, [tasks, selectedProject]);
   const [mobileActiveStatus, setMobileActiveStatus] = useState<TaskStatus>(COLUMNS[0].id);
 
   // Filter tasks by project

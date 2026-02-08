@@ -22,11 +22,10 @@ const TABS: { id: TabType; label: string; icon: typeof Clock }[] = [
 
 const STATUS_OPTIONS: { value: string; label: string; color: string }[] = [
   { value: 'todo', label: 'TODO', color: '#71717A' },
-  { value: 'assigned', label: 'ASSIGNED', color: '#3B82F6' },
   { value: 'in_progress', label: 'IN PROGRESS', color: '#F97316' },
   { value: 'needs-you', label: 'NEEDS YOU', color: '#F59E0B' },
-  { value: 'ready', label: 'READY', color: '#22C55E' },
   { value: 'review', label: 'REVIEW', color: '#8B5CF6' },
+  { value: 'ready', label: 'READY', color: '#22C55E' },
   { value: 'shipped', label: 'SHIPPED', color: '#10B981' },
 ];
 
@@ -35,6 +34,12 @@ const PRIORITY_OPTIONS = [
   { value: 'medium', label: 'Medium', color: '#3B82F6' },
   { value: 'high', label: 'High', color: '#F97316' },
   { value: 'urgent', label: 'Urgent', color: '#EF4444' },
+];
+
+const PROJECT_OPTIONS = [
+  { value: 'clawd', label: '🦞 Clawd', color: '#F97316' },
+  { value: 'stacean-repo', label: '🎯 Stacean', color: '#8B5CF6' },
+  { value: 'personal-life', label: '🏠 Personal Life', color: '#10B981' },
 ];
 
 function formatTime(timestamp: string) {
@@ -287,8 +292,8 @@ export function TaskModal({ task: initialTask, onClose, onUpdate, onStatusChange
         <div className="p-6 overflow-y-auto flex-1">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {/* Status & Priority */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Status, Priority & Project */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-[#A1A1AA] mb-2 uppercase tracking-wider">
                     Status
@@ -320,6 +325,26 @@ export function TaskModal({ task: initialTask, onClose, onUpdate, onStatusChange
                       className="w-full bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-3 text-white appearance-none cursor-pointer focus:outline-none focus:border-[#F97316]"
                     >
                       {PRIORITY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#71717A] pointer-events-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#A1A1AA] mb-2 uppercase tracking-wider">
+                    Project
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={localTask.project || 'clawd'}
+                      onChange={(e) => onUpdate({ project: e.target.value })}
+                      className="w-full bg-[#09090B] border border-[#27272A] rounded-lg px-4 py-3 text-white appearance-none cursor-pointer focus:outline-none focus:border-[#F97316]"
+                    >
+                      {PROJECT_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>

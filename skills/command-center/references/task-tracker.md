@@ -1,47 +1,104 @@
-# Task Tracker — Command Center
+# Task Tracker UI Reference
 
-## Purpose
-Redesign + operate the Task Tracker UI with mobile-first navigation and three primary views.
+This document describes the Command Center dashboard UI and its components.
 
-## Core Constraints
-- **Statuses (wire):** `open`, `in_progress`, `review`, `done`, `tombstone`
-- **Priority (required):** `urgent | high | medium | low`
-- **Project (required)** single project per task
-- **Description (required)** (AI assist allowed, never blank)
-- **No due dates**
+## Dashboard URL
 
-## Views
-### 1) Objective Stack (primary)
-- Parent/child hierarchy using **parentId** (Beads deps authoritative)
-- Ready badge when all children are done
-- Tombstones hidden by default
+- **Production**: https://stacean.vercel.app
+- **Local**: http://localhost:3000
 
-### 2) Agent Lens
-- Agent cards show: code name, current task, status, last action, heartbeat
+## Main Page Views (`/`)
+
+The main page has 4 switchable views:
+
+### 1. Objectives View
+- Task list grouped by status
+- Shows parent/child hierarchy using parentId
+- "Ready" badge when all children complete
+- Default view for task management
+
+### 2. Agents View  
+- Agent cards showing:
+  - Code name
+  - Current task
+  - Status (active/idle)
+  - Last activity timestamp
 - Live updates via `/api/tracker/agents`
 
-### 3) Energy Map
-- Energy bands map from priority:
-  - Intense: urgent/high
-  - Focused: medium
-  - Light: low
+### 3. Energy View
+- Tasks grouped by priority bands:
+  - **Intense**: urgent + high priority
+  - **Focused**: medium priority
+  - **Light**: low priority
+- Visual energy-based task selection
 
-## Create Task Flow
-- Enforce required fields before POST:
-  - title (>=3)
-  - description (>=10)
-  - priority
-  - project
-- POST `/api/tracker/tasks` with `{ title, description, priority, project, parentId?, assignedTo }`
+### 4. Live View
+- Recent activity feed
+- Grouped by time (Now, Recent, Earlier)
+- Shows both task and agent activity
 
-## KV ↔ Beads
-- Production uses KV; Beads mirrors locally
-- Status mapping lives in `blog/lib/utils/tracker-mapping.ts`
+## Components
 
-## File Map
-- `components/dashboard/TaskWidget.tsx`
-- `components/dashboard/views/ObjectiveStackView.tsx`
-- `components/dashboard/views/AgentLensView.tsx`
-- `components/dashboard/views/EnergyMapView.tsx`
-- `components/dashboard/CreateTaskSheet.tsx`
-- `lib/styles/task-tracker-theme.css`
+### StatusBadge
+Displays task status with color coding.
+
+| Status | Label | Color |
+|--------|-------|-------|
+| `todo` | TODO | Zinc |
+| `in_progress` | IN PROGRESS | Orange |
+| `needs-you` | NEEDS YOU | Amber |
+| `review` | REVIEW | Purple |
+| `ready` | READY | Green |
+| `shipped` | SHIPPED | Emerald |
+
+### PriorityBadge  
+Displays task priority with icon.
+
+| Priority | Label | Color |
+|----------|-------|-------|
+| `urgent` | URGENT | Red |
+| `high` | HIGH | Orange |
+| `medium` | MEDIUM | Yellow |
+| `low` | LOW | Green |
+
+### CreateTaskSheet
+Modal for creating new tasks.
+
+**Required fields**:
+- Title (min 3 chars)
+- Description (min 10 chars)
+- Priority
+- Project
+
+**Optional fields**:
+- Assigned to
+- Agent code name
+- Parent task ID
+
+## File Locations
+
+| Component | Path |
+|-----------|------|
+| Main Page | `app/page.tsx` |
+| StatusBadge | `components/common/StatusBadge.tsx` |
+| PriorityBadge | `components/common/PriorityBadge.tsx` |
+| CreateTaskSheet | `components/dashboard/CreateTaskSheet.tsx` |
+| TaskWidget | `components/dashboard/TaskWidget.tsx` |
+| ObjectivesView | `components/views/ObjectivesView.tsx` |
+
+## Styling
+
+- Uses Tailwind CSS
+- Dark theme by default
+- Status/priority colors defined in components
+- Responsive design for mobile
+
+## KV ↔ Beads Data Flow
+
+```
+Beads CLI (local) → sync script → Vercel KV (cloud) → Frontend
+                                        ↓
+                                  /api/tracker/tasks
+```
+
+Frontend reads from KV via API, not directly from beads.

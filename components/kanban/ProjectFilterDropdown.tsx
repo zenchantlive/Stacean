@@ -75,9 +75,8 @@ export function ProjectFilterDropdown({
         )}
         <ChevronDown
           size={14}
-          className={`ml-1 opacity-50 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+          className={`ml-1 opacity-50 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''
+            }`}
         />
       </button>
 
@@ -97,22 +96,20 @@ export function ProjectFilterDropdown({
                 onProjectChange(project.value);
                 setIsOpen(false);
               }}
-              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-all hover:bg-[var(--bg-tertiary)] ${
-                selectedProject === project.value
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-all hover:bg-[var(--bg-tertiary)] ${selectedProject === project.value
                   ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
                   : 'text-[var(--text-secondary)]'
-              }`}
+                }`}
               role="menuitem"
             >
               <span className="flex items-center gap-2">
                 {project.label}
                 {project.value !== 'all' && projectCounts[project.value] > 0 && (
                   <span
-                    className={`px-1.5 py-0.5 text-xs rounded-full ${
-                      selectedProject === project.value
+                    className={`px-1.5 py-0.5 text-xs rounded-full ${selectedProject === project.value
                         ? 'bg-[var(--accent)]/20'
                         : 'bg-[var(--bg-tertiary)]'
-                    }`}
+                      }`}
                   >
                     {projectCounts[project.value]}
                   </span>

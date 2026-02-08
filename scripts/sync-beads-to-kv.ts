@@ -24,7 +24,7 @@ import { randomUUID } from 'crypto';
  */
 function loadEnv() {
   const envPath = path.join(process.cwd(), '.env.local');
-  
+
   if (fs.existsSync(envPath)) {
     const content = fs.readFileSync(envPath, 'utf-8');
     content.split('\n').forEach(line => {
@@ -53,7 +53,7 @@ interface BeadsIssue {
   id: string;
   title: string;
   description?: string;
-  status: 'open' | 'in_progress' | 'done' | 'blocked' | 'closed' | 'agent_working' | 'needs_jordan' | 'changes_requested' | 'ready_to_commit' | 'pushed';
+  status: 'open' | 'in_progress' | 'done' | 'blocked' | 'closed' | 'agent_working' | 'needs_jordan' | 'changes_requested' | 'ready_to_commit' | 'in_review' | 'pushed';
   priority: number;
   issue_type: string;
   assignee?: string;
@@ -66,18 +66,20 @@ interface BeadsIssue {
 // Priority mapping: Beads (0=urgent, 3=low) → KV (urgent, high, medium, low)
 const BEADS_PRIORITY_MAP = ['urgent', 'high', 'medium', 'low'];
 
-// Status mapping: Beads → KV (5-stage workflow)
+// Status mapping: Beads → KV (6-status workflow)
+// Workflow: TODO → IN_PROGRESS → NEEDS_YOU → REVIEW → READY → SHIPPED
 const BEADS_STATUS_MAP: Record<BeadsIssue['status'], string> = {
   'open': 'todo',
-  'in_progress': 'active',
+  'in_progress': 'in_progress',
   'done': 'shipped',
-  'blocked': 'active',
+  'blocked': 'needs-you',           // consolidated: blocked → needs-you
   'closed': 'shipped',
-  'agent_working': 'active',
+  'agent_working': 'in_progress',   // consolidated: agent_working → in_progress
   'needs_jordan': 'needs-you',
-  'changes_requested': 'active',
+  'changes_requested': 'in_progress', // consolidated: back to work
   'ready_to_commit': 'ready',
-  'pushed': 'shipped',
+  'in_review': 'review',
+  'pushed': 'shipped',              // consolidated: pushed → shipped
 };
 
 /**
@@ -85,14 +87,14 @@ const BEADS_STATUS_MAP: Record<BeadsIssue['status'], string> = {
  */
 function fetchBeadsIssues(): BeadsIssue[] {
   console.log('📦 Fetching issues from Beads...');
-  
+
   try {
     const output = execSync('bd list --json', {
       cwd: process.cwd(),
       encoding: 'utf-8',
       timeout: 30000,
     });
-    
+
     const issues = JSON.parse(output);
     const openIssues = Array.isArray(issues)
       ? issues.filter((i: BeadsIssue) => i.status !== 'closed')
@@ -132,27 +134,27 @@ function beadToKVTask(bead: BeadsIssue) {
  */
 async function syncToKV(issues: BeadsIssue[]) {
   console.log('🚀 Syncing to KV (Upstash)...');
-  
+
   const prefix = 'tracker:task:';
   let synced = 0;
   let skipped = 0;
-  
+
   for (const issue of issues) {
     try {
       const task = beadToKVTask(issue);
       const key = `${prefix}${issue.id}`;
-      
+
       // Store task in KV
       await realKv.set(key, task);
       synced++;
-      
+
       console.log(`   ✅ ${issue.id}: ${task.title.substring(0, 40)}...`);
     } catch (error) {
       console.error(`   ❌ Failed to sync ${issue.id}:`, error);
       skipped++;
     }
   }
-  
+
   console.log(`\n📊 Sync complete: ${synced} synced, ${skipped} failed`);
   return { synced, skipped };
 }
@@ -162,31 +164,31 @@ async function syncToKV(issues: BeadsIssue[]) {
  */
 async function cleanupClosedTasks(issues: BeadsIssue[]) {
   console.log('🧹 Cleaning up closed tasks from KV...');
-  
+
   try {
     // Get all task keys
     const pattern = 'tracker:task:*';
     const keys = await realKv.keys(pattern);
-    
+
     if (keys.length === 0) {
       console.log('   No tasks in KV to clean up');
       return;
     }
-    
+
     const openIssueIds = new Set(issues.map(i => i.id));
     let removed = 0;
-    
+
     for (const key of keys) {
       // Extract issue ID from key (tracker:task:clawd-abc123 → clawd-abc123)
       const issueId = key.replace('tracker:task:', '');
-      
+
       if (!openIssueIds.has(issueId)) {
         await realKv.del(key);
         removed++;
         console.log(`   🗑️  Removed ${issueId}`);
       }
     }
-    
+
     console.log(`   Removed ${removed} closed tasks from KV`);
   } catch (error) {
     console.error('❌ Cleanup failed:', error);
@@ -198,27 +200,27 @@ async function cleanupClosedTasks(issues: BeadsIssue[]) {
  */
 async function main() {
   console.log('🔄 Beads → KV Sync Starting...\n');
-  
+
   // Check KV credentials
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
     console.error('❌ KV credentials not found. Run: npx vercel env pull');
     process.exit(1);
   }
-  
+
   // Fetch from Beads
   const issues = fetchBeadsIssues();
-  
+
   if (issues.length === 0) {
     console.log('⚠️  No open issues in Beads. Nothing to sync.');
     return;
   }
-  
+
   // Sync to KV
   await syncToKV(issues);
-  
+
   // Clean up closed tasks
   await cleanupClosedTasks(issues);
-  
+
   console.log('\n✨ Sync complete! Tasks are now visible on Vercel.');
 }
 

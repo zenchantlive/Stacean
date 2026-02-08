@@ -44,12 +44,14 @@ const PRIORITY_COLORS: Record<string, { bg: string; border: string; text: string
   low: { bg: "rgba(113, 113, 122, 0.2)", border: "#71717A", text: "#A1A1AA" },
 };
 
+// 6-status workflow: TODO → IN_PROGRESS → NEEDS_YOU → REVIEW → READY → SHIPPED
 const STATUS_COLORS: Record<string, string> = {
-  todo: "#F97316",
-  active: "#3B82F6",
-  "needs-you": "#8B5CF6",
-  ready: "#F59E0B",
-  shipped: "#22C55E",
+  todo: "#71717A",         // zinc - not started
+  in_progress: "#F97316",  // orange - agent working
+  "needs-you": "#8B5CF6",  // purple - blocked on human
+  review: "#3B82F6",       // blue - in code review
+  ready: "#F59E0B",        // amber - approved, ready to ship
+  shipped: "#22C55E",      // green - complete
 };
 
 const formatTime = (timestamp: number | string) => {
@@ -111,7 +113,7 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
       },
       {} as Record<string, number>
     );
-    
+
     // Find current active task
     const activeTask = agentTasks.find(t => t.status === 'active');
     // Find tasks needing review
@@ -121,7 +123,7 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
       .filter(t => t.status === 'shipped')
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 3);
-    
+
     return {
       counts: {
         todo: counts["todo"] || 0,
@@ -164,7 +166,7 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Currently Doing */}
                 {data.activeTask && (
                   <div className="agent-section">
@@ -177,7 +179,7 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
                     </div>
                   </div>
                 )}
-                
+
                 {/* Needs Your Review */}
                 {data.needsReview.length > 0 && (
                   <div className="agent-section">
@@ -192,7 +194,7 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
                     </div>
                   </div>
                 )}
-                
+
                 {/* Recently Shipped */}
                 {data.shipped.length > 0 && (
                   <div className="agent-section">
@@ -207,7 +209,7 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
                     </div>
                   </div>
                 )}
-                
+
                 {/* Status Breakdown */}
                 <div className="agent-metadata">
                   <span className="meta-pill todo">Todo: {data.counts.todo}</span>
@@ -216,7 +218,7 @@ function AgentsView({ agents, derived, tasks }: { agents: Agent[]; derived: bool
                   <span className="meta-pill ready">Ready: {data.counts.ready}</span>
                   <span className="meta-pill shipped">Shipped: {data.counts.shipped}</span>
                 </div>
-                
+
                 <div className="agent-stats">
                   <div>
                     <Clock size={12} />
@@ -279,7 +281,7 @@ function LiveView({ agents, tasks, derived }: { agents: Agent[]; tasks: Task[]; 
   const getTimeGroup = (timestamp: string) => {
     const date = new Date(timestamp);
     const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    
+
     if (dateOnly.getTime() === today.getTime()) return "today";
     if (dateOnly.getTime() === yesterday.getTime()) return "yesterday";
     if (dateOnly >= thisWeekStart) return "thisWeek";
@@ -429,7 +431,7 @@ export default function Home() {
       fetchAgents();
       fetchState();
       fetchTasks();
-    }, 5000);
+    }, 10000); // Poll every 10 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -592,7 +594,7 @@ export default function Home() {
                 </div>
               </div>
             )}
-            
+
             {/* Pipeline Stats Header - Desktop only */}
             <div className="pipeline-stats">
               <button className="stat-box" onClick={() => setView("stack")}>

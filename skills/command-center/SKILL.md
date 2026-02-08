@@ -1,44 +1,120 @@
 ---
 name: command-center
-description: "Operate the Command Center dashboard app. Use when building, using, or automating the Task Tracker UI or its related APIs (tasks, agents, KV↔Beads mapping), and when onboarding another agent to use the app locally via a skill folder. Includes instructions for task tracker flows, views, and required fields."
+description: "Operate the Command Center task tracker at stacean.vercel.app. Use when creating, updating, or managing tasks via Beads CLI, syncing to Vercel KV, or working with the dashboard UI. Covers the 6-status workflow (todo → in_progress → needs-you → review → ready → shipped), beads commands, KV sync, and all tracker APIs."
 ---
 
-# Command Center
+# Command Center Skill
 
-## Scope (current)
-- **Task Tracker** UX/UI + API usage (tasks + agents)
-- **Onboarding**: how to add this skill folder to a user’s local config so their agent can use the app
+The Command Center is a task tracker deployed at [stacean.vercel.app](https://stacean.vercel.app). Tasks are managed locally via **Beads CLI** and synced to **Vercel KV** for the production frontend.
 
-## Location
-- App lives in `/home/clawdbot/clawd/blog`
-- Skills live in **two places** (keep in sync):
-  - `/home/clawdbot/clawd/skills/command-center`
-  - `/home/clawdbot/clawd/blog/skills/command-center`
+## 6-Status Workflow
 
-## Quick Start (Agent)
-1. **Read** `references/task-tracker.md` for UI behavior + constraints.
-2. **Read** `references/workflow.md` for task lifecycle + heartbeats.
-3. **Use** `/blog` only (do not modify outside the app when working on this UI).
-4. **Views**: Objective Stack → Agent Lens → Energy Map.
-5. **Create Task** via the Create Task sheet (required: title, description, priority, project).
+```
+TODO → IN_PROGRESS → NEEDS_YOU → REVIEW → READY → SHIPPED
+```
 
-## User Installation (Skill Folder)
-To let another agent use Command Center:
-1. Copy the skill folder into their local skills path:
-   - `<workspace>/skills/command-center`
-2. Ensure their agent’s **AGENTS.md** (or equivalent) includes it as a **mandatory skill**.
-3. Restart/bootstrap their agent session so the skill is discovered.
+| Status | Who Sets | Description |
+|--------|----------|-------------|
+| `todo` | System | Created, not started |
+| `in_progress` | Agent | Agent actively working |
+| `needs-you` | Agent | Blocked on human decision |
+| `review` | Agent | Code done, requesting review |
+| `ready` | Human | Approved, ready to merge |
+| `shipped` | Human | Merged/deployed |
 
-## APIs (Task Tracker)
-- **Tasks:** `/api/tracker/tasks`
-- **Agents:** `/api/tracker/agents`
-- **Status wire format:** `open | in_progress | review | done | tombstone`
-- **Priority:** `urgent | high | medium | low`
+## Agent Workflow (Quick Start)
+
+```bash
+# 1. Create task
+bd create "Task title" -p 1
+
+# 2. Start working
+bd update <id> --status in_progress
+
+# 3. If blocked on human
+bd update <id> --status needs_jordan
+
+# 4. Submit for review
+bd update <id> --status in_review
+
+# 5. Sync to Vercel (makes visible on deployment)
+npm run bd:sync
+
+# 6. After human approves, they close it
+bd update <id> --status ready_to_commit
+bd close <id>
+```
+
+## Beads ↔ KV Mapping
+
+| Frontend | Beads CLI |
+|----------|-----------|
+| `in_progress` | `--status in_progress` |
+| `needs-you` | `--status needs_jordan` |
+| `review` | `--status in_review` |
+| `ready` | `--status ready_to_commit` |
+| `shipped` | `bd close` |
+
+> For complete mapping details, see [status-mapping.md](references/status-mapping.md)
+
+## APIs
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/tracker/tasks` | GET | List all tasks |
+| `/api/tracker/tasks` | POST | Create task |
+| `/api/tracker/tasks/[id]` | PUT | Update task |
+| `/api/tracker/tasks/[id]` | DELETE | Soft delete |
+| `/api/tracker/agents` | GET | List agents |
+
+> For request/response formats, see [api.md](references/api.md)
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `types/task.ts` | TaskStatus, TaskPriority types |
+| `components/common/StatusBadge.tsx` | Status badge component |
+| `lib/integrations/kv/tracker.ts` | KV adapter (creates/updates tasks) |
+| `scripts/sync-beads-to-kv.ts` | Beads → KV sync script |
+| `app/page.tsx` | Main dashboard with 4 views |
+
+## Dashboard Views
+
+The main page (`/`) has 4 views:
+
+1. **Objectives** - Task list grouped by status
+2. **Agents** - Agent status cards
+3. **Energy** - Tasks grouped by priority bands
+4. **Live** - Recent activity feed
+
+## Priorities
+
+| Priority | Value | Color |
+|----------|-------|-------|
+| `urgent` | P0 | Red |
+| `high` | P1 | Orange |
+| `medium` | P2 | Blue |
+| `low` | P3 | Zinc |
+
+## Syncing to Production
+
+Tasks appear on Vercel only after syncing:
+
+```bash
+npm run bd:sync
+```
+
+This runs `scripts/sync-beads-to-kv.ts` which:
+1. Reads all open beads issues (`bd list --json`)
+2. Maps statuses to frontend values
+3. Writes to Vercel KV (Upstash Redis)
+4. Cleans up closed tasks from KV
+
+**No git commit needed** - sync writes directly to cloud KV.
 
 ## References
-- `references/task-tracker.md` — UI behavior, constraints, mappings
-- `references/workflow.md` — task lifecycle + heartbeats + templates
-- `references/installation.md` — skill distribution + setup notes
 
-## Future Modules (placeholders)
-- Notes / Ledger / Heartbeat automation — add specs in references when ready.
+- [status-mapping.md](references/status-mapping.md) - Complete status mapping table
+- [api.md](references/api.md) - API endpoint documentation
+- [workflow.md](references/workflow.md) - Detailed task lifecycle
