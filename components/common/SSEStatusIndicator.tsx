@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
@@ -15,7 +15,7 @@ export function SSEStatusIndicator({ onTaskUpdate }: SSEStatusIndicatorProps) {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const connect = () => {
+  const connect = useCallback(() => {
     // Clean up existing connection
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -66,7 +66,7 @@ export function SSEStatusIndicator({ onTaskUpdate }: SSEStatusIndicatorProps) {
       console.error('[SSE] Failed to create EventSource:', err);
       setStatus('disconnected');
     }
-  };
+  }, [onTaskUpdate]);
 
   useEffect(() => {
     connect();
@@ -79,7 +79,7 @@ export function SSEStatusIndicator({ onTaskUpdate }: SSEStatusIndicatorProps) {
         clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, []);
+  }, [connect]);
 
   const statusConfig = {
     connecting: {

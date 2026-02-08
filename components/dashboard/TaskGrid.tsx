@@ -77,7 +77,7 @@ export function TaskGrid({ tasks, selectedTaskId, selectedProject, onSelect, onU
     }
 
     return groups;
-  }, [tasks, selectedProject]);
+  }, [filteredTasks]);
 
   const expandedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : undefined;
   const [editData, setEditData] = useState<Partial<Task>>({});

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
@@ -39,16 +40,18 @@ export function ScreenshotStream() {
       
       <div className="flex-1 overflow-x-auto flex snap-x snap-mandatory space-x-4 pb-4 no-scrollbar">
         {screenshots.map((url, i) => (
-          <motion.div 
+          <motion.div
             key={url}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="flex-none w-[280px] aspect-[9/19.5] bg-[#18181B] rounded-2xl border border-white/5 overflow-hidden snap-center shadow-2xl"
           >
-            <img 
-              src={url} 
-              alt={`Capture ${i}`} 
-              className="w-full h-full object-cover"
+            <Image
+              src={url}
+              alt={`Capture ${i}`}
+              fill
+              className="object-cover"
+              unoptimized
             />
           </motion.div>
         ))}
