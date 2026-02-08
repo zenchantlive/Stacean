@@ -96,10 +96,10 @@ test.describe('Dashboard Edge Cases - Null Safety', () => {
     // Collect console errors
     const errorCount = { status: 0, total: 0 };
     page.on('console', msg => {
-      if (msg.type === 'error') {
+      if (msg.type() === 'error') {
         errorCount.total++;
         if (msg.text().includes('Cannot read properties of undefined') &&
-            msg.text().includes("reading 'status'")) {
+          msg.text().includes("reading 'status'")) {
           errorCount.status++;
         }
       }
@@ -125,7 +125,7 @@ test.describe('Dashboard Edge Cases - Null Safety', () => {
     // Collect console errors
     const consoleErrors: string[] = [];
     page.on('console', msg => {
-      if (msg.type === 'error') {
+      if (msg.type() === 'error') {
         consoleErrors.push(msg.text());
       }
     });

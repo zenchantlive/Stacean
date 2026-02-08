@@ -4,7 +4,7 @@
  * Tests GET, PATCH, DELETE /api/tracker/tasks/[id]
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, PATCH, DELETE } from '../route';
 import { taskTracker } from '@/lib/integrations/kv/tracker';
@@ -23,7 +23,7 @@ describe('GET /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 404 for non-existent task', async () => {
-    (taskTracker.getTask as vi.Mock).mockResolvedValue(null);
+    (taskTracker.getTask as Mock).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/nonexistent');
     const response = await GET(request, { params: { id: 'nonexistent' } });
@@ -39,11 +39,10 @@ describe('GET /api/tracker/tasks/[id]', () => {
       title: 'Found Task',
       status: 'todo',
       priority: 'high',
-      context: { files: [], logs: [] },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    (taskTracker.getTask as vi.Mock).mockResolvedValue(mockTask);
+    (taskTracker.getTask as Mock).mockResolvedValue(mockTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123');
     const response = await GET(request, { params: { id: 'task-123' } });
@@ -55,7 +54,7 @@ describe('GET /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (taskTracker.getTask as vi.Mock).mockRejectedValue(new Error('KV error'));
+    (taskTracker.getTask as Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123');
     const response = await GET(request, { params: { id: 'task-123' } });
@@ -72,7 +71,7 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 404 for non-existent task', async () => {
-    (taskTracker.updateTask as vi.Mock).mockResolvedValue(null);
+    (taskTracker.updateTask as Mock).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/nonexistent', {
       method: 'PATCH',
@@ -89,23 +88,22 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
     const updatedTask = {
       id: 'task-123',
       title: 'Task',
-      status: 'in-progress',
+      status: 'in_progress',
       priority: 'medium',
-      context: { files: [], logs: [] },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    (taskTracker.updateTask as vi.Mock).mockResolvedValue(updatedTask);
+    (taskTracker.updateTask as Mock).mockResolvedValue(updatedTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'PATCH',
-      body: JSON.stringify({ status: 'in-progress' }),
+      body: JSON.stringify({ status: 'in_progress' }),
     });
     const response = await PATCH(request, { params: { id: 'task-123' } });
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.status).toBe('in-progress');
+    expect(data.status).toBe('in_progress');
   });
 
   it('updates multiple fields', async () => {
@@ -115,11 +113,10 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
       description: 'New description',
       status: 'review',
       priority: 'urgent',
-      context: { files: [], logs: [] },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    (taskTracker.updateTask as vi.Mock).mockResolvedValue(updatedTask);
+    (taskTracker.updateTask as Mock).mockResolvedValue(updatedTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'PATCH',
@@ -141,7 +138,7 @@ describe('PATCH /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (taskTracker.updateTask as vi.Mock).mockRejectedValue(new Error('KV error'));
+    (taskTracker.updateTask as Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'PATCH',
@@ -161,7 +158,7 @@ describe('DELETE /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 404 for non-existent task', async () => {
-    (taskTracker.deleteTask as vi.Mock).mockResolvedValue(false);
+    (taskTracker.deleteTask as Mock).mockResolvedValue(false);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/nonexistent', {
       method: 'DELETE',
@@ -174,7 +171,7 @@ describe('DELETE /api/tracker/tasks/[id]', () => {
   });
 
   it('deletes task successfully', async () => {
-    (taskTracker.deleteTask as vi.Mock).mockResolvedValue(true);
+    (taskTracker.deleteTask as Mock).mockResolvedValue(true);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'DELETE',
@@ -187,7 +184,7 @@ describe('DELETE /api/tracker/tasks/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (taskTracker.deleteTask as vi.Mock).mockRejectedValue(new Error('KV error'));
+    (taskTracker.deleteTask as Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks/task-123', {
       method: 'DELETE',

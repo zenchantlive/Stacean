@@ -56,12 +56,12 @@ const createMockTracker = () => {
     async zcard(key: string): Promise<number> {
       return 0;
     }
-    async ping(): Promise<string> {
-      return 'PONG';
+    async ping(): Promise<boolean> {
+      return true;
     }
   }
 
-  return { tracker: new MockKVAdapter() as TaskTrackerAdapter, mocks: { mockSet, mockGet, mockDelete, mockKeys, mockMget } };
+  return { tracker: new MockKVAdapter() as unknown as TaskTrackerAdapter, mocks: { mockSet, mockGet, mockDelete, mockKeys, mockMget } };
 };
 
 describe('TaskTrackerAdapter', () => {
@@ -89,8 +89,6 @@ describe('TaskTrackerAdapter', () => {
       expect(task.status).toBe('todo');
       expect(task.priority).toBe('medium');
       expect(task.id).toBeDefined();
-      expect(task.context.files).toEqual([]);
-      expect(task.context.logs).toEqual([]);
       expect(task.createdAt).toBeDefined();
       expect(task.updatedAt).toBeDefined();
 
@@ -141,9 +139,9 @@ describe('TaskTrackerAdapter', () => {
         title: 'Found Task',
         status: 'todo',
         priority: 'medium',
-        context: { files: [], logs: [] },
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       mocks.mockGet.mockResolvedValue(mockTask);
 
@@ -169,15 +167,15 @@ describe('TaskTrackerAdapter', () => {
         title: 'Original',
         status: 'todo',
         priority: 'medium',
-        context: { files: [], logs: [] },
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       mocks.mockGet.mockResolvedValue(existingTask);
 
       const updates: UpdateTaskInput = {
         title: 'Updated Title',
-        status: 'in-progress',
+        status: 'in_progress',
         priority: 'high',
       };
 
@@ -189,30 +187,12 @@ describe('TaskTrackerAdapter', () => {
       expect(result!.priority).toBe('high');
       expect(mocks.mockSet).toHaveBeenCalledWith('task-123', expect.objectContaining({
         title: 'Updated Title',
-        status: 'in-progress',
+        status: 'in_progress',
         priority: 'high',
       }));
     });
 
-    it('merges context updates', async () => {
-      const existingTask: Task = {
-        id: 'task-123',
-        title: 'Task',
-        status: 'todo',
-        priority: 'medium',
-        context: { files: ['file1.ts'], logs: ['log1'] },
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-      mocks.mockGet.mockResolvedValue(existingTask);
 
-      const result = await tracker.updateTask('task-123', {
-        context: { files: ['file2.ts'] },
-      });
-
-      expect(result!.context.files).toEqual(['file2.ts']);
-      expect(result!.context.logs).toEqual(['log1']);
-    });
 
     it('updates timestamp', async () => {
       const originalUpdatedAt = Date.now() - 1000;
@@ -221,9 +201,9 @@ describe('TaskTrackerAdapter', () => {
         title: 'Task',
         status: 'todo',
         priority: 'medium',
-        context: { files: [], logs: [] },
-        createdAt: originalUpdatedAt,
-        updatedAt: originalUpdatedAt,
+
+        createdAt: new Date(originalUpdatedAt).toISOString(),
+        updatedAt: new Date(originalUpdatedAt).toISOString(),
       };
       mocks.mockGet.mockResolvedValue(existingTask);
 
@@ -249,18 +229,18 @@ describe('TaskTrackerAdapter', () => {
           title: 'Task 1',
           status: 'todo',
           priority: 'medium',
-          context: { files: [], logs: [] },
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
         {
           id: '2',
           title: 'Task 2',
-          status: 'in-progress',
+
+          status: 'in_progress',
           priority: 'high',
-          context: { files: [], logs: [] },
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
       ];
       mocks.mockKeys.mockResolvedValue(['1', '2']);
@@ -281,19 +261,19 @@ describe('TaskTrackerAdapter', () => {
           title: 'Task 1',
           status: 'todo',
           priority: 'medium',
-          context: { files: [], logs: [] },
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
         null, // Deleted task
         {
           id: '3',
           title: 'Task 3',
-          status: 'done',
+          status: 'shipped',
           priority: 'low',
-          context: { files: [], logs: [] },
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
       ]);
 
@@ -315,26 +295,32 @@ describe('TaskTrackerAdapter', () => {
 
   describe('deleteTask', () => {
     it('deletes task successfully', async () => {
-      mocks.mockDelete.mockResolvedValue(true);
+      const mockTask: Task = {
+        id: 'task-123',
+        title: 'Task',
+        status: 'todo',
+        priority: 'medium',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      mocks.mockGet.mockResolvedValue(mockTask);
+      mocks.mockSet.mockResolvedValue(true);
 
       const result = await tracker.deleteTask('task-123');
 
       expect(result).toBe(true);
-      expect(mocks.mockDelete).toHaveBeenCalledWith('task-123');
+      expect(mocks.mockSet).toHaveBeenCalledWith('task-123', expect.objectContaining({
+        status: 'shipped',
+        deletedAt: expect.any(String)
+      }));
     });
 
-    it('returns false if delete fails', async () => {
-      mocks.mockDelete.mockResolvedValue(false);
-
+    it('returns false if task not found', async () => {
+      mocks.mockGet.mockResolvedValue(null);
       const result = await tracker.deleteTask('nonexistent');
-
       expect(result).toBe(false);
     });
 
-    it('calls KV delete', async () => {
-        mocks.mockDelete.mockResolvedValue(true);
-        await tracker.deleteTask('task-123');
-        expect(mocks.mockDelete).toHaveBeenCalledWith('task-123');
-    });
+
   });
 });

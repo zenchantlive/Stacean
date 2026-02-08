@@ -100,11 +100,6 @@ export function KanbanBoard({
   }, [tasks, selectedProject]);
   const [mobileActiveStatus, setMobileActiveStatus] = useState<TaskStatus>(COLUMNS[0].id);
 
-  // Filter tasks by project
-  const filteredTasks = useMemo(() => {
-    if (!selectedProject || selectedProject === 'all') return tasks;
-    return tasks.filter((task) => task.project === selectedProject);
-  }, [tasks, selectedProject]);
 
   // Detect mobile device
   useEffect(() => {
@@ -113,7 +108,7 @@ export function KanbanBoard({
       const isSmallScreen = window.innerWidth < 768;
       setIsMobile(isTouchDevice || isSmallScreen);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     window.addEventListener('orientationchange', checkMobile);
@@ -139,7 +134,7 @@ export function KanbanBoard({
 
   // Handle task status change (for mobile, called from modal)
   const handleTaskStatusChange = useCallback((taskId: string, newStatus: TaskStatus): void => {
-    setTasks((prev): Task[] => prev.map((t): Task => 
+    setTasks((prev): Task[] => prev.map((t): Task =>
       t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
     ));
 
@@ -274,11 +269,10 @@ export function KanbanBoard({
                     key={col.id}
                     type="button"
                     onClick={(): void => setMobileActiveStatus(col.id)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide whitespace-nowrap border-b-2 transition-colors touch-manipulation ${
-                      isActive
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide whitespace-nowrap border-b-2 transition-colors touch-manipulation ${isActive
                         ? 'border-current text-white'
                         : 'border-transparent text-[var(--text-muted)] active:text-[var(--text-secondary)]'
-                    }`}
+                      }`}
                     style={isActive ? { color: col.color } : undefined}
                     role="tab"
                     aria-selected={isActive}
@@ -290,9 +284,8 @@ export function KanbanBoard({
                     />
                     {col.title}
                     {count > 0 && (
-                      <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        isActive ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
-                      }`}>
+                      <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isActive ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
+                        }`}>
                         {count}
                       </span>
                     )}

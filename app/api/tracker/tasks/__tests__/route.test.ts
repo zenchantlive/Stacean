@@ -4,7 +4,7 @@
  * Tests GET /api/tracker/tasks and POST /api/tracker/tasks
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '../route';
 import { taskTracker } from '@/lib/integrations/kv/tracker';
@@ -23,7 +23,7 @@ describe('GET /api/tracker/tasks', () => {
   });
 
   it('returns 500 on KV error', async () => {
-    (taskTracker.listTasks as vi.Mock).mockRejectedValue(new Error('KV failed'));
+    (taskTracker.listTasks as Mock).mockRejectedValue(new Error('KV failed'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks');
     const response = await GET(request);
@@ -34,7 +34,7 @@ describe('GET /api/tracker/tasks', () => {
   });
 
   it('returns empty array when no tasks', async () => {
-    (taskTracker.listTasks as vi.Mock).mockResolvedValue([]);
+    (taskTracker.listTasks as Mock).mockResolvedValue([]);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks');
     const response = await GET(request);
@@ -46,10 +46,10 @@ describe('GET /api/tracker/tasks', () => {
 
   it('returns all tasks', async () => {
     const mockTasks = [
-      { id: '1', title: 'Task 1', status: 'todo' as const, priority: 'medium' as const, context: { files: [], logs: [] }, createdAt: 1, updatedAt: 1 },
-      { id: '2', title: 'Task 2', status: 'done' as const, priority: 'high' as const, context: { files: [], logs: [] }, createdAt: 2, updatedAt: 2 },
+      { id: '1', title: 'Task 1', status: 'todo' as const, priority: 'medium' as const, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: '2', title: 'Task 2', status: 'shipped' as const, priority: 'high' as const, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     ];
-    (taskTracker.listTasks as vi.Mock).mockResolvedValue(mockTasks);
+    (taskTracker.listTasks as Mock).mockResolvedValue(mockTasks);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks');
     const response = await GET(request);
@@ -99,11 +99,10 @@ describe('POST /api/tracker/tasks', () => {
       title: 'New Task',
       status: 'todo',
       priority: 'medium',
-      context: { files: [], logs: [] },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    (taskTracker.createTask as vi.Mock).mockResolvedValue(mockTask);
+    (taskTracker.createTask as Mock).mockResolvedValue(mockTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks', {
       method: 'POST',
@@ -128,11 +127,10 @@ describe('POST /api/tracker/tasks', () => {
       priority: 'high',
       assignedTo: 'agent-123',
       agentCodeName: 'Neon-Hawk',
-      context: { files: [], logs: [] },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    (taskTracker.createTask as vi.Mock).mockResolvedValue(mockTask);
+    (taskTracker.createTask as Mock).mockResolvedValue(mockTask);
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks', {
       method: 'POST',
@@ -157,7 +155,7 @@ describe('POST /api/tracker/tasks', () => {
   });
 
   it('returns 500 on create error', async () => {
-    (taskTracker.createTask as vi.Mock).mockRejectedValue(new Error('KV write failed'));
+    (taskTracker.createTask as Mock).mockRejectedValue(new Error('KV write failed'));
 
     const request = new NextRequest('http://localhost:3000/api/tracker/tasks', {
       method: 'POST',

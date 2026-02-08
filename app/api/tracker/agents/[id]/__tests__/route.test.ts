@@ -4,21 +4,21 @@
  * Tests GET, PATCH, DELETE /api/tracker/agents/[id]
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, PATCH, DELETE } from '../route';
 import { agentAdapter } from '@/lib/integrations/beads/agents';
 
 // Mock the agent adapter
-vi.mock('@/lib/integrations/beads/agents', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/integrations/beads/agents')>();
+vi.mock('@/lib/integrations/beads/agents', () => {
   return {
-    ...actual,
     agentAdapter: {
-      ...actual.agentAdapter,
       getAgent: vi.fn(),
       updateAgent: vi.fn(),
       deleteAgent: vi.fn(),
+      getActiveAgents: vi.fn(),
+      getStatusCounts: vi.fn(),
+      createAgent: vi.fn(),
     },
   };
 });
@@ -29,7 +29,7 @@ describe('GET /api/tracker/agents/[id]', () => {
   });
 
   it('returns 404 for non-existent agent', async () => {
-    (agentAdapter.getAgent as vi.Mock).mockResolvedValue(null);
+    (agentAdapter.getAgent as Mock).mockResolvedValue(null);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/nonexistent');
     const response = await GET(request, { params: { id: 'nonexistent' } });
@@ -52,7 +52,7 @@ describe('GET /api/tracker/agents/[id]', () => {
       createdAt: now - 5000,
       updatedAt: now,
     };
-    (agentAdapter.getAgent as vi.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.getAgent as Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123');
     const response = await GET(request, { params: { id: 'agent-123' } });
@@ -78,7 +78,7 @@ describe('GET /api/tracker/agents/[id]', () => {
       createdAt: now,
       updatedAt: now,
     };
-    (agentAdapter.getAgent as vi.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.getAgent as Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-456');
     const response = await GET(request, { params: { id: 'agent-456' } });
@@ -105,7 +105,7 @@ describe('GET /api/tracker/agents/[id]', () => {
       createdAt: now - 10000,
       updatedAt: now,
     };
-    (agentAdapter.getAgent as vi.Mock).mockResolvedValue(mockAgent);
+    (agentAdapter.getAgent as Mock).mockResolvedValue(mockAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-789');
     const response = await GET(request, { params: { id: 'agent-789' } });
@@ -118,7 +118,7 @@ describe('GET /api/tracker/agents/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (agentAdapter.getAgent as vi.Mock).mockRejectedValue(new Error('KV error'));
+    (agentAdapter.getAgent as Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123');
     const response = await GET(request, { params: { id: 'agent-123' } });
@@ -135,7 +135,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
   });
 
   it('returns 404 for non-existent agent', async () => {
-    (agentAdapter.updateAgent as vi.Mock).mockResolvedValue(null);
+    (agentAdapter.updateAgent as Mock).mockResolvedValue(null);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/nonexistent', {
       method: 'PATCH',
@@ -161,7 +161,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
       createdAt: now - 5000,
       updatedAt: now,
     };
-    (agentAdapter.updateAgent as vi.Mock).mockResolvedValue(updatedAgent);
+    (agentAdapter.updateAgent as Mock).mockResolvedValue(updatedAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'PATCH',
@@ -193,7 +193,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
       createdAt: now - 5000,
       updatedAt: now,
     };
-    (agentAdapter.updateAgent as vi.Mock).mockResolvedValue(updatedAgent);
+    (agentAdapter.updateAgent as Mock).mockResolvedValue(updatedAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'PATCH',
@@ -219,7 +219,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
       createdAt: now - 5000,
       updatedAt: now,
     };
-    (agentAdapter.updateAgent as vi.Mock).mockResolvedValue(updatedAgent);
+    (agentAdapter.updateAgent as Mock).mockResolvedValue(updatedAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'PATCH',
@@ -246,7 +246,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
       createdAt: now - 5000,
       updatedAt: now,
     };
-    (agentAdapter.updateAgent as vi.Mock).mockResolvedValue(updatedAgent);
+    (agentAdapter.updateAgent as Mock).mockResolvedValue(updatedAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'PATCH',
@@ -278,7 +278,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
       createdAt: now - 5000,
       updatedAt: now,
     };
-    (agentAdapter.updateAgent as vi.Mock).mockResolvedValue(updatedAgent);
+    (agentAdapter.updateAgent as Mock).mockResolvedValue(updatedAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'PATCH',
@@ -308,7 +308,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
       createdAt: now - 5000,
       updatedAt: now,
     };
-    (agentAdapter.updateAgent as vi.Mock).mockResolvedValue(updatedAgent);
+    (agentAdapter.updateAgent as Mock).mockResolvedValue(updatedAgent);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'PATCH',
@@ -326,7 +326,7 @@ describe('PATCH /api/tracker/agents/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (agentAdapter.updateAgent as vi.Mock).mockRejectedValue(new Error('KV error'));
+    (agentAdapter.updateAgent as Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'PATCH',
@@ -358,7 +358,7 @@ describe('DELETE /api/tracker/agents/[id]', () => {
   });
 
   it('returns 404 for non-existent agent', async () => {
-    (agentAdapter.deleteAgent as vi.Mock).mockResolvedValue(false);
+    (agentAdapter.deleteAgent as Mock).mockResolvedValue(false);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/nonexistent', {
       method: 'DELETE',
@@ -371,7 +371,7 @@ describe('DELETE /api/tracker/agents/[id]', () => {
   });
 
   it('deletes agent successfully', async () => {
-    (agentAdapter.deleteAgent as vi.Mock).mockResolvedValue(true);
+    (agentAdapter.deleteAgent as Mock).mockResolvedValue(true);
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'DELETE',
@@ -385,7 +385,7 @@ describe('DELETE /api/tracker/agents/[id]', () => {
   });
 
   it('returns 500 on error', async () => {
-    (agentAdapter.deleteAgent as vi.Mock).mockRejectedValue(new Error('KV error'));
+    (agentAdapter.deleteAgent as Mock).mockRejectedValue(new Error('KV error'));
 
     const request = new Request('http://localhost:3000/api/tracker/agents/agent-123', {
       method: 'DELETE',
