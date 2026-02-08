@@ -49,6 +49,44 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
+### TypeScript Best Practices
+
+```typescript
+// Explicit return types on handlers
+const handleClick = (event: MouseEvent): void => {
+  // ... handler code
+};
+
+// Explicit return types on map callbacks
+const filteredItems = items.map((item): Item => {
+  return item;
+};
+
+// Explicit return types on useEffect cleanup
+useEffect(() => {
+  // ... effect code
+  return (): void => {
+    // cleanup code
+  };
+}, []);
+
+// Add displayName to components
+MyComponent.displayName = 'MyComponent';
+```
+
+### Quality Gates
+
+```bash
+# Always run build before committing
+npm run build
+
+# Check for TypeScript errors
+npm run build 2>&1 | grep -i "error"
+
+# Check for ESLint warnings
+npm run build 2>&1 | grep -i "warning"
+```
+
 ## Sending Media via WhatsApp
 
 When sending screenshots or images to the user:
